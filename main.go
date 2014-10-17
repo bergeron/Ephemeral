@@ -12,6 +12,8 @@ import (
 	"encoding/hex"
 	"strings"
 	"html/template"
+	"bufio"
+	"os"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -147,7 +149,18 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func connectDb() *sql.DB{
-	db, err := sql.Open("mysql", "username:pass@/ephemeral")
+	file, err := os.Open("mysql.priv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	bio := bufio.NewReader(file)
+	tablename, _, err := bio.ReadLine()
+	username, _, err := bio.ReadLine()
+	password, _, err := bio.ReadLine()
+
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,7 +170,6 @@ func connectDb() *sql.DB{
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return db
 }
 

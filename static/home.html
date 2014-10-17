@@ -1,14 +1,26 @@
+{{define "home"}}
 <!DOCTYPE HTML>
 <html>
     <head>
         <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
     </head>
     <body>
 
-        <center>Ephemeral</center>
+        {{template "top" .}}
+
+        <div id="whiteStrip">
+            <h1>1. 2. 3. </h1>
+        </div>
+
+        <br>
+
         <form action="/create/" method="post">
-            <input type="text" name="text">
-            <input type="submit" value="Go">
+            <TEXTAREA class="center" NAME="text" ROWS="8" COLS="80"></TEXTAREA>
+            <input class="center" type="submit" value="Go">
         </form>
+
+
     </body>
 </html>
+{{end}}

@@ -1,4 +1,5 @@
-{{define "create"}}
+{{define "view"}}
+
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -10,10 +11,11 @@
     {{template "top" .}}
 
     <div id="whiteStrip">
-        http://localhost:11994/view/{{.SecretString}}/{{.KeyString}}
+        {{.Message}}
     </div>
 
+</body>
 
-    </body>
 </html>
+
 {{end}}

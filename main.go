@@ -99,15 +99,20 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			KeyString string
 		}
 		data := Out{secretString, keyString}
-		tmpl, err := template.ParseFiles("static/create.html")
-		err = tmpl.Execute(w, data)
+		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html"))
+		tmpl.ExecuteTemplate(w, "create", data)
 	}
 }
 
 func messsageNotFound(w http.ResponseWriter){
 
 	/* Write HTML */
-	fmt.Fprintf(w, "<h1>%s</h1>", "Not found. May have been deleted")
+	type Out struct {
+		Message string
+	}
+	data := Out{"Message not found.  It may have been deleted."}
+	tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html"))
+	tmpl.ExecuteTemplate(w, "view", data)
 }
 
 
@@ -147,11 +152,12 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 				messsageNotFound(w)
 				return
 			}
-			message, err := decrypt(keyBytes, []byte(encryptedtextBytes))
+			messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
 			if err != nil { 	/* Correct message secret, but wrong key */
 				messsageNotFound(w)
 				return
 			}
+			message:= string(messageBytes)
 
 			/* Delete message from db */
 			_, err = db.Exec("DELETE FROM messages WHERE secret = ? LIMIT 1", msgSectet)
@@ -162,13 +168,25 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		loadDecryptDelete.Unlock()
 
 		/* Write HTML */
-		fmt.Fprintf(w, "<h1>%s</h1>", message)
+		type Out struct {
+			Message string
+		}
+		data := Out{message}
+		tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html"))
+		tmpl.ExecuteTemplate(w, "view", data)
 	}
 }
 
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "static/home.html")
+	tmpl := template.Must(template.ParseFiles("static/home.html", "static/top.html"))
+	tmpl.ExecuteTemplate(w, "home", nil)
+}
+
+
+func aboutHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("static/about.html", "static/top.html"))
+	tmpl.ExecuteTemplate(w, "about", nil)
 }
 
 
@@ -210,7 +228,10 @@ func main() {
 
 	db := connectDb()
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/about/", aboutHandler)
 	http.HandleFunc("/create/", createHandler(db))
 	http.HandleFunc("/view/", viewHandler(db))
-	http.ListenAndServe(":1337", nil)
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.ListenAndServe(":11994", nil)
 }

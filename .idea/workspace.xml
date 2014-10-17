@@ -26,11 +26,10 @@
       <file leaf-file-name="main.go" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.39664218" vertical-offset="2547" max-vertical-offset="3650">
-              <caret line="149" column="47" selection-start-line="149" selection-start-column="47" selection-end-line="149" selection-end-column="47" />
+            <state vertical-scroll-proportion="1.2854145" vertical-offset="2175" max-vertical-offset="4075">
+              <caret line="151" column="18" selection-start-line="151" selection-start-column="18" selection-end-line="151" selection-end-column="18" />
               <folding>
                 <element signature="n#!!block;n#encrypt#0" expanded="false" />
-                <element signature="n#!!block;n#decrypt#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -381,7 +380,6 @@
           <caret line="112" column="0" selection-start-line="112" selection-start-column="0" selection-end-line="112" selection-end-column="0" />
           <folding>
             <element signature="n#!!block;n#encrypt#0" expanded="false" />
-            <element signature="n#!!block;n#decrypt#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -400,7 +398,6 @@
           <caret line="112" column="0" selection-start-line="112" selection-start-column="0" selection-end-line="112" selection-end-column="0" />
           <folding>
             <element signature="n#!!block;n#encrypt#0" expanded="false" />
-            <element signature="n#!!block;n#decrypt#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -419,7 +416,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="n#!!block;n#encrypt#0" expanded="false" />
-            <element signature="n#!!block;n#decrypt#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -450,11 +446,10 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.39664218" vertical-offset="2547" max-vertical-offset="3650">
-          <caret line="149" column="47" selection-start-line="149" selection-start-column="47" selection-end-line="149" selection-end-column="47" />
+        <state vertical-scroll-proportion="1.2854145" vertical-offset="2175" max-vertical-offset="4075">
+          <caret line="151" column="18" selection-start-line="151" selection-start-column="18" selection-end-line="151" selection-end-column="18" />
           <folding>
             <element signature="n#!!block;n#encrypt#0" expanded="false" />
-            <element signature="n#!!block;n#decrypt#0" expanded="false" />
           </folding>
         </state>
       </provider>

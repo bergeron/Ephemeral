@@ -14,6 +14,7 @@ import (
 	"html/template"
 	"bufio"
 	"os"
+	"time"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -60,65 +61,63 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 
 		text := r.FormValue("text")
-		encryptKey := make([]byte, 16)
-		msgSecretKey := make([]byte, 8)
-		_, err1 := rand.Read(encryptKey)
-		_, err2 := rand.Read(msgSecretKey)
+
+		/* Generate two random byte []
+		   One as key to encrypt, the other as secret message identifier
+		*/
+		keyBytes := make([]byte, 16)
+		secretBytes := make([]byte, 8)
+		_, err1 := rand.Read(keyBytes)
+		_, err2 := rand.Read(secretBytes)
 		if err1 != nil {
 			log.Fatal(err1)
 		} else if err2 != nil {
 			log.Fatal(err2)
 		}
 
-		/* Convert keys to hex String */
-		keyString := hex.EncodeToString(encryptKey)
-		msgSecretString := hex.EncodeToString(msgSecretKey)
-		fmt.Printf("%s\n", text)
-		ciphertext, err := encrypt(encryptKey, []byte(text))
+		/* Convert byte[] keys to Strings */
+		keyString := hex.EncodeToString(keyBytes)
+		secretString := hex.EncodeToString(secretBytes)
+
+		/* Encrypt text and convert from byte[] to String */
+		encryptedtextBytes, err := encrypt(keyBytes, []byte(text))
 		if err != nil {
 			log.Fatal(err)
 		}
-		encryptedtext := hex.EncodeToString(ciphertext)
+		encryptedtext := hex.EncodeToString(encryptedtextBytes)
 
-		/* Insert into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?)", encryptKey, msgSecretString, encryptedtext)
+		/* Insert message into db */
+		_, err = db.Exec("insert into messages values (?, ?, ?)", secretString, encryptedtext, time.Now())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("encryptedtext:%s\n keyString:%s\n msgSecretKey:%s\n", encryptedtext, keyString, msgSecretKey)
+		/* Write HTML */
 		type Out struct {
-			MsgSecretString string
-			Text string
+			SecretString string
 			KeyString string
-			EncryptedText string
 		}
-		data := Out{msgSecretString, text, keyString, encryptedtext}
+		data := Out{secretString, keyString}
 		tmpl, err := template.ParseFiles("static/create.html")
 		err = tmpl.Execute(w, data)
 	}
 }
 
 
-
 /* Curried with db */
 func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 
+		/* get query params */
 		queryString := r.URL.Path[len("/view/"):]
 		params := strings.Split(queryString, "/")
-
-		keyString := params[0]
-		msgSectet := params[1]
-
-		key, _ := hex.DecodeString(keyString)
-		fmt.Printf("keystring: %s\n", keyString)
-		fmt.Printf("msgSectet: %s\n", msgSectet)
-
+		msgSectet:= params[0]
+		keyString := params[1]
+		keyBytes, _ := hex.DecodeString(keyString)
 
 		/* Lookup message in db */
-		var encryptedText string
-		err := db.QueryRow("select encryptedtext from messages where secret = ?", msgSectet).Scan(&encryptedText)
+		var encryptedtext string
+		err := db.QueryRow("select encryptedtext from messages where secret = ?", msgSectet).Scan(&encryptedtext)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -126,18 +125,17 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		/* Delete message from db */
 		//TODO
 
-		/* Convert hex string to byte[] */
-		msgEncryptedBytes , err := hex.DecodeString(encryptedText)
+		/* Decrypt message */
+		encryptedtextBytes , err := hex.DecodeString(encryptedtext)
+		if err != nil {
+			log.Fatal(err)
+		}
+		message, err := decrypt(keyBytes, []byte(encryptedtextBytes))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		/* Decrypt byte[] into actual message */
-		message, err := decrypt(key, []byte(msgEncryptedBytes))
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		/* Write HTML */
 		fmt.Fprintf(w, "<h1>%s</h1>", message)
 	}
 }
@@ -148,7 +146,10 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+/* SCHEMA = (secret VARCHAR(16), encryptedtext VARCHAR(4096), dt DATETIME) */
 func connectDb() *sql.DB{
+
+	/* Load auth file */
 	file, err := os.Open("mysql.priv")
 	if err != nil {
 		log.Fatal(err)
@@ -160,12 +161,13 @@ func connectDb() *sql.DB{
 	username, _, err := bio.ReadLine()
 	password, _, err := bio.ReadLine()
 
+	/* 'Connect' lazily */
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	/* Actually connect */
+	/* Actually try to connect */
 	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)

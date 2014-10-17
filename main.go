@@ -14,6 +14,7 @@ import (
 	"html/template"
 	"bufio"
 	"os"
+	"sync"
 	"time"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -79,7 +80,7 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		keyString := hex.EncodeToString(keyBytes)
 		secretString := hex.EncodeToString(secretBytes)
 
-		/* Encrypt text and convert from byte[] to String */
+		/* Encrypt text */
 		encryptedtextBytes, err := encrypt(keyBytes, []byte(text))
 		if err != nil {
 			log.Fatal(err)
@@ -103,37 +104,62 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func messsageNotFound(w http.ResponseWriter){
+
+	/* Write HTML */
+	fmt.Fprintf(w, "<h1>%s</h1>", "Not found. May have been deleted")
+}
+
 
 /* Curried with db */
 func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
-
 		/* get query params */
-		queryString := r.URL.Path[len("/view/"):]
+		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")
 		params := strings.Split(queryString, "/")
+		if len(params) != 2 {
+			messsageNotFound(w)
+			return
+		}
 		msgSectet:= params[0]
 		keyString := params[1]
-		keyBytes, _ := hex.DecodeString(keyString)
-
-		/* Lookup message in db */
-		var encryptedtext string
-		err := db.QueryRow("select encryptedtext from messages where secret = ?", msgSectet).Scan(&encryptedtext)
-		if err != nil {
-			log.Fatal(err)
+		keyBytes, err := hex.DecodeString(keyString)
+		if err != nil {	/* Parameters weren't even */
+			messsageNotFound(w)
+			return
 		}
 
-		/* Delete message from db */
-		//TODO
+		var loadDecryptDelete sync.Mutex
+		loadDecryptDelete.Lock()
+		/***** ONLY ONE THREAD IN HERE AT A TIME */
 
-		/* Decrypt message */
-		encryptedtextBytes , err := hex.DecodeString(encryptedtext)
-		if err != nil {
-			log.Fatal(err)
-		}
-		message, err := decrypt(keyBytes, []byte(encryptedtextBytes))
-		if err != nil {
-			log.Fatal(err)
-		}
+			/* Lookup message in db */
+			var encryptedtext string
+			err = db.QueryRow("SELECT encryptedtext FROM messages WHERE secret = ?", msgSectet).Scan(&encryptedtext)
+			if err != nil {
+				messsageNotFound(w)
+				return
+			}
+
+			/* Decrypt message */
+			encryptedtextBytes , err := hex.DecodeString(encryptedtext)
+			if err != nil {
+				messsageNotFound(w)
+				return
+			}
+			message, err := decrypt(keyBytes, []byte(encryptedtextBytes))
+			if err != nil { 	/* Correct message secret, but wrong key */
+				messsageNotFound(w)
+				return
+			}
+
+			/* Delete message from db */
+			_, err = db.Exec("DELETE FROM messages WHERE secret = ? LIMIT 1", msgSectet)
+			if err != nil {
+				//Weird, but continue anyway. Just be glad its gone
+			}
+		/***** DONE */
+		loadDecryptDelete.Unlock()
 
 		/* Write HTML */
 		fmt.Fprintf(w, "<h1>%s</h1>", message)
@@ -146,7 +172,11 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-/* SCHEMA = (secret VARCHAR(16), encryptedtext VARCHAR(4096), dt DATETIME) */
+/* SCHEMA = (	secret VARCHAR(16),
+				encryptedtext VARCHAR(4096),
+				dt DATETIME
+			)
+*/
 func connectDb() *sql.DB{
 
 	/* Load auth file */

@@ -95,10 +95,11 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		/* Write HTML */
 		type Out struct {
+			Host string
 			SecretString string
 			KeyString string
 		}
-		data := Out{secretString, keyString}
+		data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
 		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html"))
 		tmpl.ExecuteTemplate(w, "create", data)
 	}

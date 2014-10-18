@@ -99,6 +99,7 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			SecretString string
 			KeyString string
 		}
+
 		data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
 		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html"))
 		tmpl.ExecuteTemplate(w, "create", data)

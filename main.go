@@ -221,9 +221,9 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-/* SCHEMA = (	secret VARCHAR(16),
-				encryptedtext VARCHAR(43688),
-				dt DATETIME	)
+/* SCHEMA = secret VARCHAR(16),
+			encryptedtext VARCHAR(43688),
+			dt DATETIME
 */
 func connectDb() (*sql.DB, error){
 

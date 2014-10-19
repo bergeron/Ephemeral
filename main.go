@@ -260,7 +260,6 @@ func main() {
 	db, err := connectDb()
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
 
 	http.HandleFunc("/", homeHandler)
@@ -269,5 +268,12 @@ func main() {
 	http.HandleFunc("/view/", viewHandler(db))
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.ListenAndServe(":11994", nil)
+
+	/* SSL/TLS */
+	path_to_certificate := "/etc/nginx/ssl/ssl.crt"
+	path_to_key := "/etc/nginx/ssl/private.key"
+	err = http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

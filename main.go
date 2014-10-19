@@ -125,7 +125,7 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	        }
 	    }
 
-        /* get query params */
+		/* get query params */
 		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")
 		params := strings.Split(queryString, "/")
 		if len(params) != 2 {

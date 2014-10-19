@@ -269,5 +269,5 @@ func main() {
 	http.HandleFunc("/view/", viewHandler(db))
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.ListenAndServe(":11995", nil)
+	http.ListenAndServe(":11994", nil)
 }

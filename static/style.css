@@ -1,6 +1,6 @@
 html{
-     margin:0;
-     padding:0;
+    margin:0;
+    padding:0;
     background-color: #efefef;
     font-family:FreeSans,Arimo,"Droid Sans",Helvetica,Arial,sans-serif;
 }
@@ -41,14 +41,14 @@ body{
     height: 265px;
     float: right;
     text-align: right;
-    font-size: 30px;
-    line-height: 55px;
+    font-size: 33px;
+    line-height: 50px;
     background-image: url('corner.png');
 }
 
 #corner a{
     padding-right: 10px;
-    color: white;
+    color: #36D7B7;
     text-decoration: none;
 }
 
@@ -56,27 +56,99 @@ body{
     text-decoration: underline;
 }
 
-
 #whiteStrip{
-    padding-left: 10px;
-    padding-top: 10px;
-    height: 300px;
+    min-height: 170px;
+    padding-top: 15px;
+    padding-bottom: 15px;
     background-color: white;
 }
 
 #whiteStrip h1{
-    font-size: 40px;
+    font-size: 30px;
+    font-weight: normal;
+    margin:0;
+    padding:0;
 }
 
-#leftBox{
-    float: left;
+#whiteStrip h2{
+    font-weight: normal;
+    margin:0;
+    padding:0;
 }
 
-#middleBox{
-    float: left;
-    margin-left: 26%;
+.alignRelaxed{
+    padding-left: 20%;
 }
 
-#rightBox{
-    margin-left: 60%;
+.alignAggressive{
+    padding-left: 20%;
 }
+
+@media (max-width: 910px) {
+    .alignRelaxed{
+        padding-left: 5%;
+    }
+   #whiteStrip h1{
+       font-size: 25px;
+   }
+   #corner{
+          width: 200px;
+          height: 200px;
+          font-size: 26px;
+          line-height: 36px;
+      }
+}
+
+@media (max-width: 1200px) {
+    .alignAggressive{
+        padding-left: 7%;
+    }
+}
+
+@media (max-width: 1000px) {
+    .alignAggressive{
+        padding-left: 1%;
+    }
+}
+
+.well650 {
+    word-wrap: break-word;
+    color: white;
+    max-width: 650px;
+    min-height: 20px;
+    padding: 19px;
+    margin-bottom: 20px;
+    background-color: black;
+    border: 4px solid #36D7B7;
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+}
+
+.well {
+    word-break: break-word;
+    color: white;
+    width: 60%;
+    min-height: 20px;
+    padding: 19px;
+    margin-bottom: 20px;
+    background-color: black;
+    border: 4px solid #36D7B7;
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+}
+
+.submitBtn {
+	color: white;
+	background: black;
+	font-size: 25px;
+	padding: 15px 55px;
+	outline: none;
+	border: 5px solid #36D7B7;
+    cursor: pointer;
+}
+
+.submitBtn:hover {
+	color: black;
+	background: #36D7B7;
+}
+

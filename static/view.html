@@ -2,19 +2,27 @@
 
 <!DOCTYPE HTML>
 <html>
-<head>
-    <title>Ephemeral</title>
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
-</head>
-<body>
+    {{template "head" .}}
+    <body>
 
-    {{template "top" .}}
+        {{template "top" .}}
 
-    <div id="whiteStrip">
-        {{.Message}}
-    </div>
+        <div id="whiteStrip" class="alignAggressive">
+            {{if .Success}}
+                <h1>The Message:</h1>
+                <br>
+                <div class="well">
+                    {{.Message}}
+                </div>
 
-</body>
+                <br><br>
+                <h1>This message has been deleted and cannot be viewed again.</h1>
+            {{else}}
+                <h1>Message not found.  It may have been deleted.</h1>
+            {{end}}
+        </div>
+
+    </body>
 
 </html>
 

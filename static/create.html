@@ -1,19 +1,18 @@
 {{define "create"}}
 <!DOCTYPE HTML>
 <html>
-<head>
-    <title>Ephemeral</title>
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
-</head>
-<body>
+    {{template "head" .}}
+    <body>
+        {{template "top" .}}
 
-    {{template "top" .}}
+        <div id="whiteStrip" class="alignAggressive">
+            <h1>Give this URL to the recipient:</h1>
+            <br><br>
+            <div class="well650">
+                http://{{.Host}}/view/{{.SecretString}}/{{.KeyString}}
+            </div>
 
-    <div id="whiteStrip">
-        http://{{.Host}}/view/{{.SecretString}}/{{.KeyString}}
-    </div>
-
-
+        </div>
     </body>
 </html>
 {{end}}

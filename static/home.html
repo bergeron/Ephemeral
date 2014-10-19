@@ -1,25 +1,22 @@
 {{define "home"}}
 <!DOCTYPE HTML>
 <html>
-    <head>
-        <title>Ephemeral</title>
-        <link rel="stylesheet" type="text/css" href="/static/style.css">
-    </head>
+    {{template "head" .}}
     <body>
 
         {{template "top" .}}
 
-        <div id="whiteStrip">
-            <div id="leftBox">1. Create a message</div>
-            <div id="middleBox">2. Send the URL to the recipient</div>
-            <div id="rightBox">3. Messagesdafffs daf sadkjkfsdojs flsdh flshduf isd hlufas hldiu is destroyed when </div>
-
+        <div id="whiteStrip" class="alignRelaxed">
+            <h1>1. Create a message</h1><br>
+            <h1>2. Send the URL to the recipient</h1><br>
+            <h1>3. Message is destroyed when read</h1><br>
         </div>
 
         <br>
         <form action="/create/" method="post">
-            <TEXTAREA class="center" NAME="text" ROWS="8" COLS="80"></TEXTAREA>
-            <input class="center" type="submit" value="Go">
+            <TEXTAREA style="font-size: 20px;" class="center" NAME="text" ROWS="9" COLS="50"></TEXTAREA>
+            <br>
+            <input class="center submitBtn" type="submit" value="Create">
         </form>
 
 

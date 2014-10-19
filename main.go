@@ -20,7 +20,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-
+/* Given a random 128 bits, encrypt text with an AES cipher */
 func encrypt(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -38,6 +38,7 @@ func encrypt(key, text []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+/* Given encrypted text and the AES cipher key, decrypt the text */
 func decrypt(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -57,11 +58,15 @@ func decrypt(key, text []byte) ([]byte, error) {
 	return data, nil
 }
 
-/* Curried with db */
+/* POST to /create (Curried with db) */
 func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 
 		text := r.FormValue("text")
+		if len(text) > 16000{
+			writeError(w, "Message too long. Max character length is 16000.")
+			return
+		}
 
 		/* Generate two random byte []
 		   One as key to encrypt, the other as secret message identifier
@@ -80,7 +85,7 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		keyString := hex.EncodeToString(keyBytes)
 		secretString := hex.EncodeToString(secretBytes)
 
-		/* Encrypt text */
+		/* Encrypt the text */
 		encryptedtextBytes, err := encrypt(keyBytes, []byte(text))
 		if err != nil {
 			log.Fatal(err)
@@ -101,110 +106,122 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
-		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html"))
+		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
 		tmpl.ExecuteTemplate(w, "create", data)
 	}
 }
 
-func messsageNotFound(w http.ResponseWriter){
-
-	/* Write HTML */
-	type Out struct {
-		Message string
-	}
-	data := Out{"Message not found.  It may have been deleted."}
-	tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html"))
-	tmpl.ExecuteTemplate(w, "view", data)
-}
-
-
-/* Curried with db */
+/* GET to /view (Curried with db) */
 func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 		/* get query params */
 		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")
 		params := strings.Split(queryString, "/")
 		if len(params) != 2 {
-			messsageNotFound(w)
+			writeError(w, "Message not found. It may have been deleted.")
 			return
 		}
 		msgSectet:= params[0]
 		keyString := params[1]
 		keyBytes, err := hex.DecodeString(keyString)
-		if err != nil {	/* Parameters weren't even */
-			messsageNotFound(w)
+		if err != nil {
+			fmt.Println("Key is not hex")
+			writeError(w, "Message not found. It may have been deleted.")
 			return
 		}
 
-		var loadDecryptDelete sync.Mutex
-		loadDecryptDelete.Lock()
-		/***** ONLY ONE THREAD IN HERE AT A TIME */
+		var m sync.Mutex
+		m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
+		message, err := loadDecryptDelete(db, msgSectet, keyBytes)
+		m.Unlock()	/*DONE */
 
-			/* Lookup message in db */
-			var encryptedtext string
-			err = db.QueryRow("SELECT encryptedtext FROM messages WHERE secret = ?", msgSectet).Scan(&encryptedtext)
-			if err != nil {
-				messsageNotFound(w)
-				return
-			}
-
-			/* Decrypt message */
-			encryptedtextBytes , err := hex.DecodeString(encryptedtext)
-			if err != nil {
-				messsageNotFound(w)
-				return
-			}
-			messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
-			if err != nil { 	/* Correct message secret, but wrong key */
-				messsageNotFound(w)
-				return
-			}
-			message:= string(messageBytes)
-
-			/* Delete message from db */
-			_, err = db.Exec("DELETE FROM messages WHERE secret = ? LIMIT 1", msgSectet)
-			if err != nil {
-				//Weird, but continue anyway. Just be glad its gone
-			}
-		/***** DONE */
-		loadDecryptDelete.Unlock()
+		if err != nil{
+			fmt.Println(err)
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		} else {
+			fmt.Println("Message Found!")
+		}
 
 		/* Write HTML */
 		type Out struct {
+			Success bool
 			Message string
 		}
-		data := Out{message}
-		tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html"))
+		data := Out{true, message}
+		tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html", "static/head.html"))
 		tmpl.ExecuteTemplate(w, "view", data)
 	}
 }
 
+/* Atomic transaction */
+func loadDecryptDelete(db *sql.DB, msgSectet string, keyBytes []byte) (string, error){
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/home.html", "static/top.html"))
-	tmpl.ExecuteTemplate(w, "home", nil)
+	/* Lookup message in db */
+	var encryptedtext string
+	err := db.QueryRow("SELECT encryptedtext FROM messages WHERE secret = ?", msgSectet).Scan(&encryptedtext)
+	if err != nil {
+		return "", errors.New("No message found with msgSecret: " + msgSectet)
+	}
+
+	/* Decrypt message */
+	encryptedtextBytes , err := hex.DecodeString(encryptedtext)
+	if err != nil {
+		return "", errors.New("Error converting encryptedext from string to byte[]")
+	}
+	messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
+	if err != nil {
+		return "", errors.New("Valid msgSecret, but invalid key")
+	}
+	message:= string(messageBytes)
+
+	/* Delete message from db */
+	_, err = db.Exec("DELETE FROM messages WHERE secret = ? LIMIT 1", msgSectet)
+	if err != nil {
+		//Weird (given atomicity), but continue anyway.
+	}
+	
+	return message, nil
+}
+
+/* Write the given error message as HTML */
+func writeError(w http.ResponseWriter, message string){
+	type Out struct {
+		Message string
+	}
+
+	/* Write HTML */
+	data := Out{message}
+	tmpl := template.Must(template.ParseFiles("static/error.html", "static/top.html", "static/head.html"))
+	tmpl.ExecuteTemplate(w, "error", data)
 }
 
 
+/* GET / */
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("static/home.html", "static/top.html", "static/head.html"))
+	tmpl.ExecuteTemplate(w, "home", nil)
+}
+
+/* GET /about */
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/about.html", "static/top.html"))
+	tmpl := template.Must(template.ParseFiles("static/about.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "about", nil)
 }
 
 
 /* SCHEMA = (	secret VARCHAR(16),
-				encryptedtext VARCHAR(4096),
-				dt DATETIME
-			)
+				encryptedtext VARCHAR(43688),
+				dt DATETIME	)
 */
-func connectDb() *sql.DB{
+func connectDb() (*sql.DB, error){
 
 	/* Load auth file */
 	file, err := os.Open("mysql.priv")
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer file.Close()
+	if err != nil {
+		return nil, errors.New("Could not find mysql.priv")
+	}
 
 	bio := bufio.NewReader(file)
 	tablename, _, err := bio.ReadLine()
@@ -214,21 +231,27 @@ func connectDb() *sql.DB{
 	/* 'Connect' lazily */
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	/* Actually try to connect */
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return db
+
+	return db, nil /* Success */
 }
 
 
 func main() {
 
-	db := connectDb()
+	db, err := connectDb()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/about/", aboutHandler)
 	http.HandleFunc("/create/", createHandler(db))

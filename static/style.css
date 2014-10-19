@@ -153,3 +153,8 @@ body{
 	background: #36D7B7;
 }
 
+
+textarea{
+    font-size: 20px;
+    height: 222px;  /* So Chrome mobile wont resize the box when typing */
+}

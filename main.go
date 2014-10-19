@@ -114,7 +114,18 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 /* GET to /view (Curried with db) */
 func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
-		/* get query params */
+
+		/* Blacklist sites that GET the url before sending to recipient */
+		blacklist := [...]string{"facebook"}
+		
+		for _,e := range blacklist {
+	        if strings.Contains(r.UserAgent(), e) {
+	        	fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
+	        	return
+	        }
+	    }
+
+        /* get query params */
 		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")
 		params := strings.Split(queryString, "/")
 		if len(params) != 2 {
@@ -258,5 +269,5 @@ func main() {
 	http.HandleFunc("/view/", viewHandler(db))
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.ListenAndServe(":11994", nil)
+	http.ListenAndServe(":11995", nil)
 }

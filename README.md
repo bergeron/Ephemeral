@@ -7,7 +7,7 @@ Ephemeral
 Ephemeral lets you send messages that are destroyed when read.  After you create the message, we give you a URL that allows the recipient to read the message.  Upon being read, the note is destroyed.
 
 
-Messages are encrypted with a 128 bit [symmetric AES cipher] (http://en.wikipedia.org/wiki/Advanced_Encryption_Standard).  The key is in the URL, and we throw away they key so it is never stored in our database.  If the server was stolen, there would be no way to decrypt the messages in the database.  The maximum message length is 16000 characters.
+Messages are encrypted with a 128 bit [symmetric AES cipher] (http://en.wikipedia.org/wiki/Advanced_Encryption_Standard).  The key is in the URL, and we throw away they key so it is never stored in our database.  If the database was stolen, there would be no way to decrypt the messages.  We use SSL/TLS.  The maximum message length is 16000 characters.
 
 Written in Go.
 

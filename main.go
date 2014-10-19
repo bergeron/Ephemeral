@@ -221,7 +221,7 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-/*  Schema:			
+/*  Schema:
 		secret VARCHAR(16),
 		encryptedtext VARCHAR(43688),
 		dt DATETIME

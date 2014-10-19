@@ -119,11 +119,11 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		blacklist := [...]string{"facebook"}
 		
 		for _,e := range blacklist {
-	        if strings.Contains(r.UserAgent(), e) {
-	        	fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
-	        	return
-	        }
-	    }
+			if strings.Contains(r.UserAgent(), e) {
+				fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
+				return
+			}
+		}
 
 		/* get query params */
 		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")

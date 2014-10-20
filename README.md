@@ -11,3 +11,7 @@ Messages are encrypted with a 128 bit [symmetric AES cipher] (http://en.wikipedi
 
 Written in Go.
 
+### MySQL
+
+* Configure tablename, username, password in ```mysql.priv```
+* Set the MySQL system variable [```event_scheduler```](http://dev.mysql.com/doc/refman/5.1/en/server-system-variables.html#sysvar_event_scheduler) to ```ON```.  The auto-deletion of message runs as a MySQL event.

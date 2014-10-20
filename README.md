@@ -15,3 +15,5 @@ Written in Go.
 
 * Configure tablename, username, password in ```mysql.priv```
 * Set the MySQL system variable [```event_scheduler```](http://dev.mysql.com/doc/refman/5.1/en/server-system-variables.html#sysvar_event_scheduler) to ```ON```.  The auto-deletion of message runs as a MySQL event.
+* To run the auto-deleter, run ```./start_auto_delete.sh```
+

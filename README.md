@@ -12,5 +12,5 @@ Messages are encrypted with a 128 bit [symmetric AES cipher](http://en.wikipedia
 ### MySQL
 
 * Configure db_name, username, password in ```mysql.priv```
-* run ```./message_reaper.sh <num_minutes>```.  The message reaper is a MySQL event that runs every <num_minutes> minutes.  It reaps (deletes) the souls of expired messages.
+* run ```./message_reaper.sh <num_minutes>```.  The message reaper is a MySQL event that runs every ```<num_minutes>``` minutes.  It reaps (deletes) the souls of expired messages.
 * To reset the database, run ```./reset_db.sh```.

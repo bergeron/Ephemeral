@@ -1,6 +1,8 @@
 Ephemeral
 =========
 
+[![SSL Rating](http://sslbadge.org/?domain=ephemeral.pw)](https://www.ssllabs.com/ssltest/analyze.html?d=ephemeral.pw)
+
 ## https://ephemeral.pw
 
 

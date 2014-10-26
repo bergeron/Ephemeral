@@ -14,10 +14,14 @@
 
         <br>
         <form action="/create/" method="post">
-            
             <TEXTAREA class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></TEXTAREA>
-            
-                <br>
+            <br>
+
+            <div id="expiration">
+                Set expiration (minutes):
+                <input type="number" name="expireMinutes" placeholder="None">
+            </div>
+            <br>
             <input class="center submitBtn" type="submit" value="Create">
         </form>
 

@@ -158,3 +158,19 @@ textarea{
     font-size: 20px;
     height: 222px;  /* So Chrome mobile wont resize the box when typing */
 }
+
+.expiration{
+    margin-left: 30%;
+    display: inline;
+}
+
+#expiration{
+    text-align: center;
+    font-size: 22px;
+}
+
+#expiration input{
+    font-size: 22px;
+    width: 130px;
+}
+

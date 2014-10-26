@@ -26,8 +26,7 @@ run_mysql_cmd (){
 `run_mysql_cmd "SET GLOBAL event_scheduler = ON;"`
 
 # Delete job
-dt_curr=`date -u +"%Y-%m-%d %H:%M:%S"`
-job="delete from messages where dt_delete <= '$dt_curr'"
+job="delete from messages where dt_delete <= NOW();"
 
 curr_interval=`run_mysql_cmd "select INTERVAL_VALUE from INFORMATION_SCHEMA.EVENTS where EVENT_NAME = \"message_reaper\";"`
 if [[ $curr_interval ]]  # Reaper already running.
@@ -61,7 +60,7 @@ else #No existing reaper
     then
          echo "No reaper to kill."
     else #Create new reaper.
-        `run_mysql_cmd "create event message_reaper on schedule every $1 minute do $job;"`
+        `run_mysql_cmd "create event message_reaper on schedule every $1 minute do $job"`
         echo "Created a new message reaper to run every $1 minutes."
     fi
 fi

@@ -16,6 +16,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"strconv"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -92,8 +93,17 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 		encryptedtext := hex.EncodeToString(encryptedtextBytes)
 
+		/* Set expiration date */
+		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
+		var dt_delete time.Time
+		if err != nil {
+			dt_delete = time.Date(9999, 0, 0, 0, 0, 0, 0, time.FixedZone("UTC", 0))	/* Never expire */
+		} else {
+			dt_delete =  time.Now().Add(time.Minute * time.Duration(expireMinutes))
+		}
+
 		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?)", secretString, encryptedtext, time.Now())
+		_, err = db.Exec("insert into messages values (?, ?, ?, ?)", secretString, encryptedtext, time.Now(), dt_delete)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -224,11 +234,12 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 /*  Schema:
 		secret VARCHAR(16),
 		encryptedtext VARCHAR(43688),
-		dt DATETIME
+		dt_created DATETIME,
+		dt_delete DATETIME
 */
 func connectDb() (*sql.DB, error){
 
-	/* Load auth file */
+	/* Load config file */
 	file, err := os.Open("mysql.priv")
 	defer file.Close()
 	if err != nil {
@@ -240,7 +251,6 @@ func connectDb() (*sql.DB, error){
 	username, _, err := bio.ReadLine()
 	password, _, err := bio.ReadLine()
 
-	/* 'Connect' lazily */
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
 		return nil, err
@@ -252,7 +262,7 @@ func connectDb() (*sql.DB, error){
 		return nil, err
 	}
 
-	return db, nil /* Success */
+	return db, nil
 }
 
 

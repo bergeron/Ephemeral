@@ -115,9 +115,15 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			KeyString string
 		}
 
-		data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
-		tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
-		tmpl.ExecuteTemplate(w, "create", data)
+		format := r.FormValue("format")
+		if format == "url" {	/* Return only url */
+			url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/" +secretString + "/" + keyString
+			w.Write([]byte(url))
+		} else {	/* Return html */
+			data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
+			tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
+			tmpl.ExecuteTemplate(w, "create", data)
+		}
 	}
 }
 

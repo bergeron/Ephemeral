@@ -2,7 +2,7 @@
 
 # Drops and recreates the messaging table with the given schema.
 
-schema="(secret VARBINARY(16),encryptedtext VARBINARY(43688),dt_created DATETIME,dt_delete DATETIME)"
+schema="(secret VARBINARY(16) NOT NULL,encryptedtext VARBINARY(43688) NOT NULL,dt_created DATETIME NOT NULL,dt_delete DATETIME NOT NULL,server_encrypted BOOLEAN NOT NULL)"
 
 # Get db_name, username, password from mysql.priv
 db_name=$(sed -n '1p' < mysql.priv)

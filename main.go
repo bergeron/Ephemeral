@@ -59,8 +59,8 @@ func decrypt(key, text []byte) ([]byte, error) {
 	return data, nil
 }
 
-/* POST to /create (Curried with db) */
-func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
+/* POST /create/server */
+func createServerHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 
 		text := r.FormValue("text")
@@ -69,25 +69,21 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		/* Generate two random byte []
-		   One as key to encrypt, the other as secret message identifier
-		*/
-		keyBytes := make([]byte, 16)
-		secretBytes := make([]byte, 8)
-		_, err1 := rand.Read(keyBytes)
-		_, err2 := rand.Read(secretBytes)
+		/* Generate 128 random bits, twice */
+		key128bits := make([]byte, 16)
+		msgId128bits := make([]byte, 16)
+		_, err1 := rand.Read(key128bits)
+		_, err2 := rand.Read(msgId128bits)
 		if err1 != nil {
 			log.Fatal(err1)
 		} else if err2 != nil {
 			log.Fatal(err2)
 		}
 
-		/* Convert byte[] keys to Strings */
-		keyString := hex.EncodeToString(keyBytes)
-		secretString := hex.EncodeToString(secretBytes)
+		msgId := hex.EncodeToString(msgId128bits)
 
 		/* Encrypt the text */
-		encryptedtextBytes, err := encrypt(keyBytes, []byte(text))
+		encryptedtextBytes, err := encrypt(key128bits, []byte(text))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -103,7 +99,7 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?, ?)", secretString, encryptedtext, time.Now(), dt_delete)
+		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?)", msgId, encryptedtext, time.Now(), dt_delete, true)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -117,18 +113,59 @@ func createHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		format := r.FormValue("format")
 		if format == "url" {	/* Return only url */
-			url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/" +secretString + "/" + keyString
+			url := "http://" + os.Getenv("EPHEMERAL_HOST") + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
 			w.Write([]byte(url))
 		} else {	/* Return html */
-			data := Out{os.Getenv("EPHEMERAL_HOST"), secretString, keyString}
+			data := Out{os.Getenv("EPHEMERAL_HOST"), msgId, hex.EncodeToString(key128bits)}
 			tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
 			tmpl.ExecuteTemplate(w, "create", data)
 		}
 	}
 }
 
-/* GET to /view (Curried with db) */
-func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+/* POST /create/client */
+func createClientHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+
+		encryptedText := r.FormValue("text")
+		if len(encryptedText) > 16000{
+			writeError(w, "Message too long. Max character length is 16000.")
+			return
+		}
+
+		fmt.Println(encryptedText)
+
+		/* Generate 128 random bits */
+		msgId128bits := make([]byte, 16)
+		_, err := rand.Read(msgId128bits)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		msgId := hex.EncodeToString(msgId128bits)
+
+		/* Set expiration date */
+		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
+		var dt_delete time.Time
+		if err != nil {
+			dt_delete = time.Date(9999, 0, 0, 0, 0, 0, 0, time.FixedZone("UTC", 0))	/* Never expire */
+		} else {
+			dt_delete =  time.Now().Add(time.Minute * time.Duration(expireMinutes))
+		}
+
+		/* Insert message into db */
+		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?)", msgId, encryptedText, time.Now(), dt_delete, false)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/client/" + msgId
+		w.Write([]byte(url))
+	}
+}
+
+/* GET /view/server */
+func viewServerHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 	return  func(w http.ResponseWriter, r *http.Request) {
 
 		/* Blacklist sites that GET the url before sending to recipient */
@@ -142,13 +179,13 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		/* get query params */
-		queryString := strings.TrimSuffix(r.URL.Path[len("/view/"):],"/")
+		queryString := strings.TrimSuffix(r.URL.Path[len("/view/server/"):],"/")
 		params := strings.Split(queryString, "/")
 		if len(params) != 2 {
 			writeError(w, "Message not found. It may have been deleted.")
 			return
 		}
-		msgSectet:= params[0]
+		msgId := params[0]
 		keyString := params[1]
 		keyBytes, err := hex.DecodeString(keyString)
 		if err != nil {
@@ -159,7 +196,93 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		var m sync.Mutex
 		m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
-		message, err := loadDecryptDelete(db, msgSectet, keyBytes)
+
+		/* Lookup message in db */
+		var encryptedText string
+		err = db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
+		if err != nil {
+			fmt.Println("No message found with msgId: " + msgId)
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		}
+
+		/* Decrypt message */
+		encryptedtextBytes , err := hex.DecodeString(encryptedText)
+		if err != nil {
+			fmt.Println("Error converting encryptedext from string to byte[]")
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		}
+		messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
+		if err != nil {
+			fmt.Println("Valid msgId, but invalid key")
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		}
+		message := string(messageBytes)
+
+		/* Delete message from db */
+		_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
+		if err != nil {
+			fmt.Println("Message already deleted.")		/* Shouldn't happen */
+		}
+	
+		m.Unlock()	/*DONE */
+
+		fmt.Println("Message Found!")
+
+		/* Write HTML */
+		type Out struct {
+			Success bool
+			Message string
+		}
+		data := Out{true, message}
+		tmpl := template.Must(template.ParseFiles("static/viewServer.html", "static/top.html", "static/head.html"))
+		tmpl.ExecuteTemplate(w, "viewServer", data)
+	}
+}
+
+/* GET /view/client */
+func viewClientHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+
+		/* Blacklist sites that GET the url before sending to recipient */
+		blacklist := [...]string{"facebook"}
+		
+		for _,e := range blacklist {
+			if strings.Contains(r.UserAgent(), e) {
+				fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
+				return
+			}
+		}
+
+		/* get query params */
+		queryString := strings.TrimSuffix(r.URL.Path[len("/view/client/"):],"/")
+		params := strings.Split(queryString, "/")
+		if len(params) != 1 {
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		}
+		msgId := params[0]
+
+		var m sync.Mutex
+		m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
+
+		/* Lookup message in db */
+		var encryptedText string
+		err := db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
+		if err != nil {
+			fmt.Println("No message found with msgId: " + msgId)
+			writeError(w, "Message not found. It may have been deleted.")
+			return
+		}
+
+		/* Delete message from db */
+		_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
+		if err != nil {
+			fmt.Println("Message already deleted.")		/* Shouldn't happen */
+		}
+
 		m.Unlock()	/*DONE */
 
 		if err != nil{
@@ -175,40 +298,11 @@ func viewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			Success bool
 			Message string
 		}
-		data := Out{true, message}
-		tmpl := template.Must(template.ParseFiles("static/view.html", "static/top.html", "static/head.html"))
-		tmpl.ExecuteTemplate(w, "view", data)
+		fmt.Println(encryptedText)
+		data := Out{true, encryptedText}
+		tmpl := template.Must(template.ParseFiles("static/viewClient.html", "static/top.html", "static/head.html"))
+		tmpl.ExecuteTemplate(w, "viewClient", data)
 	}
-}
-
-/* Atomic transaction */
-func loadDecryptDelete(db *sql.DB, msgSectet string, keyBytes []byte) (string, error){
-
-	/* Lookup message in db */
-	var encryptedtext string
-	err := db.QueryRow("SELECT encryptedtext FROM messages WHERE secret = ?", msgSectet).Scan(&encryptedtext)
-	if err != nil {
-		return "", errors.New("No message found with msgSecret: " + msgSectet)
-	}
-
-	/* Decrypt message */
-	encryptedtextBytes , err := hex.DecodeString(encryptedtext)
-	if err != nil {
-		return "", errors.New("Error converting encryptedext from string to byte[]")
-	}
-	messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
-	if err != nil {
-		return "", errors.New("Valid msgSecret, but invalid key")
-	}
-	message:= string(messageBytes)
-
-	/* Delete message from db */
-	_, err = db.Exec("DELETE FROM messages WHERE secret = ? LIMIT 1", msgSectet)
-	if err != nil {
-		//Weird (given atomicity), but continue anyway.
-	}
-	
-	return message, nil
 }
 
 /* Write the given error message as HTML */
@@ -222,7 +316,6 @@ func writeError(w http.ResponseWriter, message string){
 	tmpl := template.Must(template.ParseFiles("static/error.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "error", data)
 }
-
 
 /* GET / */
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -238,10 +331,11 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 
 
 /*  Schema:
-		secret VARCHAR(16),
-		encryptedtext VARCHAR(43688),
-		dt_created DATETIME,
-		dt_delete DATETIME
+		id VARCHAR(32) NOT NULL,
+		encryptedtext VARCHAR(43688) NOT NULL,
+		dt_created DATETIME NOT NULL,
+		dt_delete DATETIME NOT NULL,
+		server_encrypted BOOLEAN NOT NULL
 */
 func connectDb() (*sql.DB, error){
 
@@ -281,15 +375,18 @@ func main() {
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/about/", aboutHandler)
-	http.HandleFunc("/create/", createHandler(db))
-	http.HandleFunc("/view/", viewHandler(db))
+	http.HandleFunc("/create/server/", createServerHandler(db))
+	http.HandleFunc("/create/client/", createClientHandler(db))
+	http.HandleFunc("/view/server/", viewServerHandler(db))
+	http.HandleFunc("/view/client/", viewClientHandler(db))
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	/* SSL/TLS */
+	/* SSL/TLS *//*
 	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
 	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-	err = http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+*/
+	err = http.ListenAndServe(":11994", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

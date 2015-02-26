@@ -17,6 +17,14 @@ body{
      padding:0;
 }
 
+a {
+    color: black
+}
+
+a:hover{
+    color: #36D7B7;
+}
+
 #top{
     padding-left: 10px;
     height: 100px;
@@ -37,17 +45,17 @@ body{
 }
 
 #corner{
-    width: 265px;
-    height: 265px;
+    width: 245px;
+    height: 245px;
     float: right;
     text-align: right;
-    font-size: 33px;
+    font-size: 25px;
     line-height: 50px;
     background-image: url('corner.png');
 }
 
 #corner a{
-    padding-right: 10px;
+    padding-right: 13px;
     color: #36D7B7;
     text-decoration: none;
 }
@@ -57,14 +65,14 @@ body{
 }
 
 #whiteStrip{
-    min-height: 170px;
+    min-height: 150px;
     padding-top: 15px;
     padding-bottom: 15px;
     background-color: white;
 }
 
 #whiteStrip h1{
-    font-size: 30px;
+    font-size: 25px;
     font-weight: normal;
     margin:0;
     padding:0;
@@ -89,9 +97,6 @@ body{
     .alignRelaxed{
         padding-left: 5%;
     }
-   #whiteStrip h1{
-       font-size: 25px;
-   }
    #corner{
           width: 200px;
           height: 200px;
@@ -112,13 +117,14 @@ body{
     }
 }
 
-.well650 {
+.well700 {
     word-wrap: break-word;
     color: white;
-    max-width: 650px;
+    max-width: 700px;
     min-height: 20px;
     padding: 19px;
     margin-bottom: 20px;
+    margin-top: 10px;
     background-color: black;
     border: 4px solid #36D7B7;
     -moz-border-radius: 15px;
@@ -141,8 +147,8 @@ body{
 .submitBtn {
 	color: white;
 	background: black;
-	font-size: 25px;
-	padding: 15px 55px;
+	font-size: 20px;
+	padding: 15px 40px;
 	outline: none;
 	border: 5px solid #36D7B7;
     cursor: pointer;
@@ -166,11 +172,40 @@ textarea{
 
 #expiration{
     text-align: center;
-    font-size: 22px;
+    font-size: 20px;
 }
 
 #expiration input{
-    font-size: 22px;
+    font-size: 20px;
     width: 130px;
 }
 
+#encryptBox{
+    padding: 20px;
+    max-width: 625px;
+    margin-bottom: 30px;
+    min-height: 250px;
+    font-size: 20px;
+    display: none;
+}
+
+#encryptBox input[type="text"]{
+    margin-top: 10px;
+    font-size: 20px;
+    width: 300px;
+    margin-left: 10px;
+}
+
+/*#encryptBox input[type="radio"]{
+    width: 30px;
+    height: 30px;
+}
+*/
+
+#result{
+    visibility: hidden;
+}
+
+#result > .well700{
+    font-size: 16px;
+}

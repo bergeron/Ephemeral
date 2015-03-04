@@ -219,7 +219,7 @@ textarea{
     border-width: 1px;
 }
 
-@media (max-width: 910px) {
+@media (max-device-width: 500px) {
     #about{
         font-size: 14px;
     }

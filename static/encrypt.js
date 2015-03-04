@@ -3,9 +3,7 @@ function choosePwd(){
 	document.getElementById("encryptBox").style.display = "block";
 }
 
-
 function encrypt(message, passwordSource){
-
 	var password;
 	if(passwordSource == "custom"){
 		password = document.getElementById("customPassword").value;
@@ -13,13 +11,16 @@ function encrypt(message, passwordSource){
 		password = CryptoJS.lib.WordArray.random(128/8).toString();
 	}
 
-	var encryptedText = CryptoJS.AES.encrypt(message, password).toString();
-	var params = "text=" + encodeURIComponent(encryptedText);
+	var salt = CryptoJS.lib.WordArray.random(128/8).toString();
+	var key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
+	var encryptedText = CryptoJS.AES.encrypt(message, key).toString();
+
+	var expireMinutes = document.getElementById("expireMinutes").value;
+	var params = "text=" + encodeURIComponent(encryptedText) + "&expireMinutes=" + encodeURIComponent(expireMinutes) + "&salt=" + salt;
 
 	var request = new XMLHttpRequest();
 	request.open('POST', '/create/client/', true);
 	request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
 	request.onload = function() {
 	  if (request.status >= 200 && request.status < 400) {
 	    var resp = request.responseText;
@@ -30,7 +31,6 @@ function encrypt(message, passwordSource){
 	  	//Error
 	  }
 	};
-
 	request.onerror = function() {
 	  //Error
 	};

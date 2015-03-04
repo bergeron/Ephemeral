@@ -69,18 +69,14 @@ func createServerHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		/* Generate 128 random bits, twice */
-		key128bits := make([]byte, 16)
-		msgId128bits := make([]byte, 16)
-		_, err1 := rand.Read(key128bits)
-		_, err2 := rand.Read(msgId128bits)
-		if err1 != nil {
-			log.Fatal(err1)
-		} else if err2 != nil {
-			log.Fatal(err2)
-		}
+		msgId := generateMsgId(db)
 
-		msgId := hex.EncodeToString(msgId128bits)
+		/* Generate 128 bit key */
+		key128bits := make([]byte, 16)
+		_, err := rand.Read(key128bits)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		/* Encrypt the text */
 		encryptedtextBytes, err := encrypt(key128bits, []byte(text))
@@ -91,31 +87,27 @@ func createServerHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		/* Set expiration date */
 		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
-		var dt_delete time.Time
 		if err != nil {
-			dt_delete = time.Date(9999, 0, 0, 0, 0, 0, 0, time.FixedZone("UTC", 0))	/* Never expire */
-		} else {
-			dt_delete =  time.Now().Add(time.Minute * time.Duration(expireMinutes))
+			expireMinutes = 43200	/* Default expire in 30 days */
 		}
 
 		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?)", msgId, encryptedtext, time.Now(), dt_delete, true)
+		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", msgId, encryptedtext, nil, time.Now().Unix(), expireMinutes, true)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		/* Write HTML */
-		type Out struct {
-			Host string
-			SecretString string
-			KeyString string
-		}
-
 		format := r.FormValue("format")
 		if format == "url" {	/* Return only url */
-			url := "http://" + os.Getenv("EPHEMERAL_HOST") + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
+			url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
 			w.Write([]byte(url))
 		} else {	/* Return html */
+			
+			type Out struct {
+				Host string
+				SecretString string
+				KeyString string
+			}
 			data := Out{os.Getenv("EPHEMERAL_HOST"), msgId, hex.EncodeToString(key128bits)}
 			tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
 			tmpl.ExecuteTemplate(w, "create", data)
@@ -133,28 +125,20 @@ func createClientHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		fmt.Println(encryptedText)
+		msgId := generateMsgId(db)
+		salt := r.FormValue("salt")
 
-		/* Generate 128 random bits */
-		msgId128bits := make([]byte, 16)
-		_, err := rand.Read(msgId128bits)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		msgId := hex.EncodeToString(msgId128bits)
+		fmt.Println("Create: ")
+		fmt.Println(salt)
 
 		/* Set expiration date */
 		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
-		var dt_delete time.Time
 		if err != nil {
-			dt_delete = time.Date(9999, 0, 0, 0, 0, 0, 0, time.FixedZone("UTC", 0))	/* Never expire */
-		} else {
-			dt_delete =  time.Now().Add(time.Minute * time.Duration(expireMinutes))
+			expireMinutes = 43200	/* Default expire in 30 days */
 		}
 
 		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?)", msgId, encryptedText, time.Now(), dt_delete, false)
+		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", msgId, encryptedText, salt, time.Now().Unix(), expireMinutes, false)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -185,6 +169,7 @@ func viewServerHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			writeError(w, "Message not found. It may have been deleted.")
 			return
 		}
+
 		msgId := params[0]
 		keyString := params[1]
 		keyBytes, err := hex.DecodeString(keyString)
@@ -270,7 +255,8 @@ func viewClientHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		/* Lookup message in db */
 		var encryptedText string
-		err := db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
+		var salt string
+		err := db.QueryRow("SELECT encrypted_text, salt FROM messages WHERE id = ?", msgId).Scan(&encryptedText, &salt)
 		if err != nil {
 			fmt.Println("No message found with msgId: " + msgId)
 			writeError(w, "Message not found. It may have been deleted.")
@@ -285,25 +271,158 @@ func viewClientHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		m.Unlock()	/*DONE */
 
-		if err != nil{
-			fmt.Println(err)
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		} else {
-			fmt.Println("Message Found!")
-		}
+		fmt.Println("Message Found!")
 
 		/* Write HTML */
 		type Out struct {
 			Success bool
 			Message string
+			Salt string
 		}
-		fmt.Println(encryptedText)
-		data := Out{true, encryptedText}
+		data := Out{true, encryptedText, salt}
 		tmpl := template.Must(template.ParseFiles("static/viewClient.html", "static/top.html", "static/head.html"))
 		tmpl.ExecuteTemplate(w, "viewClient", data)
 	}
 }
+
+
+/* Generate unique 128 random bits */
+func generateMsgId(db *sql.DB) string {
+
+	msgId128bits := make([]byte, 16)
+	_, err := rand.Read(msgId128bits)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	msgId := hex.EncodeToString(msgId128bits)
+
+	/* Check for collision */
+	var available bool
+	err = db.QueryRow("SELECT COUNT(*) = 0 FROM messages WHERE id = ?", msgId).Scan(&available)
+	if err != nil {
+		fmt.Println("Error checking msgId collision.")
+		return msgId
+	}
+
+	if(available){
+		return msgId
+	} else {
+		return generateMsgId(db)
+	}
+}
+
+
+/* GET /chat */
+func chatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+		tmpl := template.Must(template.ParseFiles("static/chatCreate.html", "static/top.html", "static/head.html"))
+		tmpl.ExecuteTemplate(w, "chatCreate", nil)
+	}
+}
+
+
+/* POST /chat/create */
+func createChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+
+		/* Generate 128 random bits */
+		chatId128bits := make([]byte, 16)
+		_, err := rand.Read(chatId128bits)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		chatId := hex.EncodeToString(chatId128bits)
+
+		/* Insert chat into db */
+		_, err = db.Exec("insert into chats values (?, ?)", chatId, time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		url := "http://" + os.Getenv("EPHEMERAL_HOST") + "/chat/view/" + chatId
+		w.Write([]byte(url))
+	}
+}
+
+/* GET /chat/view */
+func viewChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+
+		/* get query params */
+		queryString := strings.TrimSuffix(r.URL.Path[len("/chat/view/"):],"/")
+		params := strings.Split(queryString, "/")
+		if len(params) != 1 {
+			writeError(w, "Chat not found. It may have been deleted.")
+			return
+		}
+
+		chatId := params[0]
+
+		/* Lookup chat in db */
+		err := db.QueryRow("SELECT chatId FROM chats WHERE chatId=?", chatId).Scan(&chatId)
+		if err != nil {
+			fmt.Println("No chat found with chatId: " + chatId)
+			writeError(w, "Chat not found. It may have been deleted.")
+			return
+		}
+
+
+		rows, err := db.Query("SELECT encrypted_text, username from chat_msgs where chatId=?", chatId)
+		if err != nil {
+			fmt.Println("No chat messages found with chatId: " + chatId)
+			writeError(w, "Chat not found. It may have been deleted.")
+			return
+		}
+
+		defer rows.Close()
+	    for rows.Next() {
+	            var encrypted_text string
+	            var username string
+	            if err := rows.Scan(&encrypted_text, &username); err != nil {
+	                    log.Fatal(err)
+	            }
+	            fmt.Printf("%s \n\n %s\n", encrypted_text, username)
+	    }
+	    if err := rows.Err(); err != nil {
+	            log.Fatal(err)
+	    }
+
+
+		tmpl := template.Must(template.ParseFiles("static/chatView.html", "static/top.html", "static/head.html"))
+		tmpl.ExecuteTemplate(w, "chatView", nil)
+	}
+}
+
+/* POST /chat/addmsg */
+func addMsgChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
+
+		chatId := "TODO_chatid"
+		encryptedText := "TODO_encrypted_text"
+		username := "TODO_username"
+		dt_delete := time.Now()
+
+		/* Lookup chat in db */
+		err := db.QueryRow("SELECT chatId FROM chats WHERE chatId= ?", chatId).Scan(&chatId)
+		if err != nil {
+			fmt.Println("No chat found with chatId: " + chatId)
+			writeError(w, "Chat not found. It may have been deleted.")
+			return
+		}
+
+		/* Insert message into db */
+		_, err = db.Exec("insert into chat_msgs values (?, ?, ?, ?, ?)", chatId, encryptedText, username, time.Now(), dt_delete)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		w.Write([]byte("added message"))
+
+	}
+}
+
 
 /* Write the given error message as HTML */
 func writeError(w http.ResponseWriter, message string){
@@ -329,14 +448,6 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "about", nil)
 }
 
-
-/*  Schema:
-		id VARCHAR(32) NOT NULL,
-		encryptedtext VARCHAR(43688) NOT NULL,
-		dt_created DATETIME NOT NULL,
-		dt_delete DATETIME NOT NULL,
-		server_encrypted BOOLEAN NOT NULL
-*/
 func connectDb() (*sql.DB, error){
 
 	/* Load config file */
@@ -379,13 +490,18 @@ func main() {
 	http.HandleFunc("/create/client/", createClientHandler(db))
 	http.HandleFunc("/view/server/", viewServerHandler(db))
 	http.HandleFunc("/view/client/", viewClientHandler(db))
+	http.HandleFunc("/chat/", chatHandler(db))
+	http.HandleFunc("/chat/create/", createChatHandler(db))
+	http.HandleFunc("/chat/view/", viewChatHandler(db))
+	http.HandleFunc("/chat/addmsg/", addMsgChatHandler(db))
+
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	/* SSL/TLS *//*
+	/* SSL/TLS */
 	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
 	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-*/
+
 	err = http.ListenAndServe(":11994", nil)
 	if err != nil {
 		log.Fatal(err)

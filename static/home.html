@@ -12,9 +12,9 @@
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignRelaxed">
-            <h1>1. Create a message</h1><br>
-            <h1>2. Send the URL to the recipient</h1><br>
-            <h1>3. Message is destroyed when read</h1><br>
+            <h1>1. Encrypt a message</h1><br>
+            <h1>2. Send URL to recipient</h1><br>
+            <h1>3. Message destroyed when read</h1><br>
         </div>
 
         <br>
@@ -24,7 +24,7 @@
 
             <div id="expiration">
                 Set expiration (minutes):
-                <input type="number" name="expireMinutes" placeholder="None">
+                <input id="expireMinutes" type="number" name="expireMinutes" placeholder="None">
             </div>
             <br><br>
             <div class="center" style="display: table">
@@ -39,8 +39,9 @@
         </form>
 
         <br><Br>
+        
+        <div id="encryptBox" class="center" style="display: none;">
         <hr><br>
-        <div id="encryptBox" class="center">
             <form onsubmit="return encrypt(msgText.value, passwordSource.value);" style="overflow: hidden;">
                 <input type="radio" name="passwordSource" value="rand" onclick="customPassword.value='';customPassword.disabled=true" checked> 
                     Random 128 bit password<br>

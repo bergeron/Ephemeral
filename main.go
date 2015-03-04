@@ -502,7 +502,7 @@ func main() {
 	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
 	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
 
-	err = http.ListenAndServe(":11994", nil)
+	err = http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

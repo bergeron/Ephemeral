@@ -1,15 +1,17 @@
 {{define "create"}}
 <!DOCTYPE HTML>
 <html>
-    {{template "head" .}}
+    <head>
+        {{template "head" .}}
+    </head>
     <body>
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignAggressive">
             <h1>Give this URL to the recipient:</h1>
             <br><br>
-            <div class="well650">
-                https://{{.Host}}/view/{{.SecretString}}/{{.KeyString}}
+            <div class="well700">
+                https://{{.Host}}/view/server/{{.SecretString}}/{{.KeyString}}
             </div>
 
         </div>

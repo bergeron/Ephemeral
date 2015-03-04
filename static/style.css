@@ -17,6 +17,14 @@ body{
      padding:0;
 }
 
+a {
+    color: black
+}
+
+a:hover{
+    color: #36D7B7;
+}
+
 #top{
     padding-left: 10px;
     height: 100px;
@@ -37,17 +45,18 @@ body{
 }
 
 #corner{
-    width: 265px;
-    height: 265px;
+    width: 170px;
+    height: 238px;
     float: right;
     text-align: right;
-    font-size: 33px;
-    line-height: 50px;
+    padding-top: 3px;
+    font-size: 25px;
+    line-height: 40px;
     background-image: url('corner.png');
 }
 
 #corner a{
-    padding-right: 10px;
+    padding-right: 16px;
     color: #36D7B7;
     text-decoration: none;
 }
@@ -57,14 +66,14 @@ body{
 }
 
 #whiteStrip{
-    min-height: 170px;
+    min-height: 150px;
     padding-top: 15px;
     padding-bottom: 15px;
     background-color: white;
 }
 
 #whiteStrip h1{
-    font-size: 30px;
+    font-size: 25px;
     font-weight: normal;
     margin:0;
     padding:0;
@@ -83,15 +92,13 @@ body{
 
 .alignAggressive{
     padding-left: 20%;
+    padding-right: 20%;
 }
 
 @media (max-width: 910px) {
     .alignRelaxed{
         padding-left: 5%;
     }
-   #whiteStrip h1{
-       font-size: 25px;
-   }
    #corner{
           width: 200px;
           height: 200px;
@@ -112,13 +119,14 @@ body{
     }
 }
 
-.well650 {
+.well700 {
     word-wrap: break-word;
     color: white;
-    max-width: 650px;
+    max-width: 700px;
     min-height: 20px;
     padding: 19px;
     margin-bottom: 20px;
+    margin-top: 10px;
     background-color: black;
     border: 4px solid #36D7B7;
     -moz-border-radius: 15px;
@@ -141,8 +149,9 @@ body{
 .submitBtn {
 	color: white;
 	background: black;
-	font-size: 25px;
-	padding: 15px 55px;
+	font-size: 20px;
+	padding: 15px 40px;
+    margin-bottom: 2px;
 	outline: none;
 	border: 5px solid #36D7B7;
     cursor: pointer;
@@ -166,11 +175,46 @@ textarea{
 
 #expiration{
     text-align: center;
-    font-size: 22px;
+    font-size: 20px;
 }
 
 #expiration input{
-    font-size: 22px;
+    font-size: 20px;
     width: 130px;
 }
 
+#encryptBox{
+    padding: 20px;
+    max-width: 625px;
+    margin-bottom: 30px;
+    min-height: 250px;
+    font-size: 20px;
+}
+
+#encryptBox input[type="text"]{
+    margin-top: 10px;
+    font-size: 20px;
+    width: 300px;
+    margin-left: 10px;
+}
+
+#result{
+    visibility: hidden;
+}
+
+#result > .well700{
+    font-size: 16px;
+}
+
+#about{
+    padding: 15px;
+    background-color: white;
+    font-weight: normal;
+    font-size: 20px;
+}
+
+#about img{
+    width: 100%;
+    border-style: solid;
+    border-width: 1px;
+}

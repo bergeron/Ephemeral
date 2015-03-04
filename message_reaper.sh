@@ -25,8 +25,8 @@ run_mysql_cmd (){
 # Enable event scheduler
 `run_mysql_cmd "SET GLOBAL event_scheduler = ON;"`
 
-# Delete job
-job="delete from messages where dt_delete <= NOW();"
+# Delete command
+job="delete from messages where (dt_created_epoch + (60 * expire_minutes)) < UNIX_TIMESTAMP();"
 
 curr_interval=`run_mysql_cmd "select INTERVAL_VALUE from INFORMATION_SCHEMA.EVENTS where EVENT_NAME = \"message_reaper\";"`
 if [[ $curr_interval ]]  # Reaper already running.

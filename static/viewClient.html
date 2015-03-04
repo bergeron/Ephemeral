@@ -1,0 +1,47 @@
+{{define "viewClient"}}
+
+<!DOCTYPE HTML>
+<html>
+    <head>
+        {{template "head" .}}
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/decrypt.js"></script>
+        <script language="javascript">
+            var encryptedText = {{.Message}};
+            var salt = {{.Salt}};
+        </script>
+    </head>
+    <body>
+
+        {{template "top" .}}
+
+        <div id="whiteStrip" class="alignAggressive">
+            {{if .Success}}
+                <h1>The Message:</h1>
+
+                <br>
+                <div id="decryptedMessage" class="well">
+                    {{.Message}}
+                </div>
+
+
+                <form style="width:60%;height:100px" onsubmit="return decrypt(password.value);">
+                    <div style="float:right;display:table;">
+                        <input type="text" name="password" style="font-size: 25px"> &nbsp;
+                        <button class="submitBtn" >Decrypt</button>
+                    </div>
+                </form>
+
+                <br>
+                <h1>This message has been deleted and cannot be viewed again.</h1>
+            {{else}}
+                <h1>Message not found.  It may have been deleted.</h1>
+            {{end}}
+        </div>
+
+    </body>
+
+</html>
+
+{{end}}

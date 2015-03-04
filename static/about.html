@@ -1,31 +1,56 @@
 {{define "about"}}
 <!DOCTYPE HTML>
 <html>
-    {{template "head" .}}
+    <head>
+        {{template "head" .}}
+    </head>
     <body>
         {{template "top" .}}
 
-        <div id="whiteStrip" class="alignRelaxed">
-            <br><br>
-            <h2>
-                Ephemeral lets you send temporary encrypted messages.
-                After you create the message, you are given a URL that allows the recipient to read the message.
-                The message is destroyed upon being read.
+        <div id="about">
+
+            <div class="center" style="max-width:1100px;">
+                <br>
+                Ephemeral lets you send temporary, encrypted messages.  
+                After creating a message, you are given a URL that allows the recipient to read the message.
+                The message is destroyed upon being read.  If not read for 30 days, it is automatically deleted.
 
                 <br><br>
+                
+                Ephemeral is not a replacement for PGP.  It relies on the recipient being the first person to visit the URL.  Ephemeral is more useful for temporariness than it is encryption.  After the recipient reads the message (or after the set timeout), you can be certain no one else will read it.
 
-                Messages are encrypted with a 128 bit <a href="http://en.wikipedia.org/wiki/Advanced_Encryption_Standard">symmetric AES cipher</a>.
-                The key is never persistently stored on the server.
-                The key is saved only in the message's URL, not the database.
-                An attacker with database access would see only encrypted data.
-                Ephemeral uses SSL/TLS.  The maximum message length is 16000 characters.
-
+                
                 <br><br>
-
                 Written in Go: <a href="https://github.com/bergeron/Ephemeral">https://github.com/bergeron/Ephemeral</a>
-               <br><br>
-           </h2>
 
+                <br><br><br>
+
+                <hr>
+
+                <h2>In-browser encryption:</h2>
+                The message is 128 bit AES encrypted in your browser before it is sent to the server.  You may choose the password, or use a randomly generated password.  Keys are generated with salted PBKDF2.  The server stores only the encrypted message, and never sees the key.  The URL will deliver the encrypted message to the recipient, and it will be decrypted in the recipient's browser.  The message will be deleted.  You are responsible for delivering the key to the recipient.  This could be done through online chat/message/etc or in person.  At NO point can the Ephemeral server know your message.
+
+                <br><br>
+                <img src="/static/architecture_client_send.png">
+                <img src="/static/architecture_client_receive.png">
+
+                <br><br><br>
+
+
+                <h2>Server-side encryption:</h2>
+                The message is sent to the server over SSL.  It is 128 bit AES encrypted with a random key.  The key is sent back to you in a URL, and is never persistently stored on the server.  When the recipient visits the URL the message is decrypted, delivered to the recipient, and deleted.  Because encryption keys are deleted, they exist only in the URL on your clipboard.  Ephemeral cannot decrypt any messages in its database.
+
+                <br><br>
+                <img src="/static/architecture_server_send.png">
+                <img src="/static/architecture_server_receive.png">
+
+            <br><br><br><br>
+            </div>
+
+            <br><br>
+
+            
+           
         </div>
     </body>
 </html>

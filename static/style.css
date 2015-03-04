@@ -218,3 +218,9 @@ textarea{
     border-style: solid;
     border-width: 1px;
 }
+
+@media (max-width: 910px) {
+    #about{
+        font-size: 14px;
+    }
+}

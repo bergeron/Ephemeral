@@ -14,7 +14,7 @@
                 <h1>The Message:</h1>
                 <br>
                 <div class="well">
-                    {{.Message}}
+                    {{range .Message}}{{.}}<br>{{end}}
                 </div>
 
                 <br><br>

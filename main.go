@@ -204,7 +204,8 @@ func viewServerHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			writeError(w, "Message not found. It may have been deleted.")
 			return
 		}
-		message := string(messageBytes)
+
+		message := template.HTMLEscapeString(string(messageBytes))	/* no XSS */
 
 		/* Delete message from db */
 		_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
@@ -219,9 +220,9 @@ func viewServerHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		/* Write HTML */
 		type Out struct {
 			Success bool
-			Message string
+			Message []string
 		}
-		data := Out{true, message}
+		data := Out{true, strings.Split(message, "\n")}
 		tmpl := template.Must(template.ParseFiles("static/viewServer.html", "static/top.html", "static/head.html"))
 		tmpl.ExecuteTemplate(w, "viewServer", data)
 	}
@@ -501,7 +502,6 @@ func main() {
 	/* SSL/TLS */
 	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
 	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-
 	err = http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
 	if err != nil {
 		log.Fatal(err)

@@ -123,6 +123,8 @@ a:hover{
 }
 
 .well700 {
+    font-size: 15px;
+    font-family: monospace;
     word-wrap: break-word;
     color: white;
     max-width: 700px;
@@ -137,6 +139,8 @@ a:hover{
 }
 
 .well {
+    font-size: 15px;
+    font-family: monospace;
     word-break: break-word;
     color: white;
     width: 60%;
@@ -203,10 +207,6 @@ textarea{
 
 #result{
     visibility: hidden;
-}
-
-#finishedMessage{
-    font-size: 16px;
 }
 
 #about{

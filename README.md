@@ -5,13 +5,7 @@ Ephemeral
 
 ## https://ephemeral.pw
 
-
-Ephemeral lets you send temporary encrypted messages.  After you create the message, you are given a URL that allows the recipient to read the message.  The message is destroyed upon being read.
-
-
-Messages are encrypted with a 128 bit [symmetric AES cipher](http://en.wikipedia.org/wiki/Advanced_Encryption_Standard).  The key is never persistently stored on the server.  The key is saved only in the message's URL, not the database.  An attacker with database access would see only encrypted data.
-
-Ephemeral uses SSL/TLS.  The maximum message length is 16000 characters.
+Ephemeral lets you send temporary, encrypted messages. After creating a message, you are given a URL that allows the recipient to read the message. The message is destroyed upon being read.
 
 ### MySQL
 

@@ -11,7 +11,7 @@ db_name=$(sed -n '1p' < mysql.priv)
 username=$(sed -n '2p' < mysql.priv)
 password=$(sed -n '3p' < mysql.priv)
 
-echo "Warning! This will drop tables {messages, chatrooms, nicknames, chat_msgs} in database $db_name."
+echo "Warning! This will drop tables {messages, chatrooms, nicknames, invites} in database $db_name."
 echo "They will be recreated with schema:"
 echo ""
 echo "messages:"

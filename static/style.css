@@ -130,7 +130,6 @@ a:hover{
     max-width: 700px;
     min-height: 20px;
     padding: 19px;
-    margin-bottom: 20px;
     margin-top: 10px;
     background-color: black;
     border: 4px solid #36D7B7;
@@ -211,7 +210,7 @@ textarea{
 }
 
 #result{
-    visibility: hidden;
+    display: none;
 }
 
 #about{
@@ -304,8 +303,9 @@ textarea{
 
 #messageText{
     width: 75%;
-    height: 20px;
-    margin-top: 10px
+    height: 30px;
+    font-size: 20px;
+    margin-top: 2px
 }
 
 #inviteWell{

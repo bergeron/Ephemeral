@@ -4,11 +4,15 @@ var socket;
 var key;
 var salt;
 var password;
-var chatroomId = document.URL.substring(document.URL.indexOf('/chat/') + 6);
-var dtUpdateAfter = '';
+var chatroomId = $(location).attr('pathname').substring(6);
 var nicknameId;
 var nicknames = [];
 var colors = [];
+
+
+if (!window['WebSocket']) {
+	alert('Your browser does not support WebSockets. Ephemeral chat requires WebSockets');
+}
 
 function create(nickname, passwordSource){
 
@@ -24,7 +28,7 @@ function create(nickname, passwordSource){
 		var encryptedNickname = CryptoJS.AES.encrypt(nickname, key).toString();
 
 		$.ajax({
-			method: "POST",
+			method: 'POST',
 			url: '/chat/create/',
 			data: {
 				encryptedNickname: 	encryptedNickname,
@@ -76,7 +80,7 @@ function openChat(pwd, nickname){
 		var dupes = 0;
 		for(var i=0; i < nicknames.length; i++){
 			if(nicknames[i] == nickname){
-				nickname = origNickname + "(" + (dupes+1) + ")";
+				nickname = origNickname + '(' + (dupes+1) + ')';
 				dupes ++;
 				i=0;
 			}
@@ -92,23 +96,19 @@ function openChat(pwd, nickname){
 }
 
 function openWebSocket(){
-	if (!window["WebSocket"]) {
-		alert("Your browser can't handle this.");
-		return;
-	}
 
-	socket = new WebSocket("wss://ephemeral.pw/chat/ws?chatroomId=" + chatroomId);
+	socket = new WebSocket('wss://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
     socket.onopen = function(event){
 		sendMsg('has joined the chat');
     }
     socket.onmessage = function(event) {
     	var data = JSON.parse(event.data);
 
-    	if(data.Type == "newMessage"){
+    	if(data.Type == 'newMessage'){
 			var nickname = CryptoJS.AES.decrypt(data.EncryptedNickname, key).toString(CryptoJS.enc.Utf8);
 			var text = CryptoJS.AES.decrypt(data.EncryptedText, key).toString(CryptoJS.enc.Utf8);
 			messageToHTML(nickname, text);
-		} else if(data.Type == "newMember"){
+		} else if(data.Type == 'newMember'){
 			var nickname = CryptoJS.AES.decrypt(data.EncryptedNickname, key).toString(CryptoJS.enc.Utf8);
 			addMember(nickname);
 		}
@@ -122,11 +122,9 @@ function sendMsg(message){
 	try {
 
 		if(message.length > 2700){
-			alert("Maximum message length is 2700");
+			alert('Maximum message length is 2700');
 			return false;
-		}
-
-		if (!socket) {
+		} else if (!socket) {
 			return false;
 		}
 
@@ -150,7 +148,7 @@ function setNickname(nickname, fn){
 	var encryptedNickname = CryptoJS.AES.encrypt(nickname, key).toString();
 
 	$.ajax({
-		method: "POST",
+		method: 'POST',
 		url: '/chat/setNickname/',
 		data: {
 			chatroomId: 		chatroomId,
@@ -189,10 +187,10 @@ function messageToHTML(nickname, text){
 		'</span>' +
 	'</div>';
 
-	var messagesDiv = $('#messages').append(messageHTML);
+	$('#messages').append(messageHTML);
 
 	var chatWindow = $('#chatRoomWindow');
-	chatWindow.scrollTop(chatWindow.prop("scrollHeight"));	/* Scroll to bottom when message added */
+	chatWindow.scrollTop(chatWindow.prop('scrollHeight'));	/* Scroll to bottom when message added */
 }
 
 function addMember(nickname){
@@ -216,7 +214,7 @@ function randDarkColor() {
 function invite(){
 
 	$.ajax({
-		method: "POST",
+		method: 'POST',
 		url: '/invite/',
 		data: {
 			chatroomId: 	chatroomId

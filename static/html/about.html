@@ -28,7 +28,7 @@
                 <hr>
 
                 <h2>In-browser encryption:</h2>
-                The message is 128 bit AES encrypted in your browser before it is sent to the server.  You may choose the password, or use a randomly generated password.  Keys are generated with salted PBKDF2.  The server stores only the encrypted message, and never sees the key.  The URL will deliver the encrypted message to the recipient, and it will be decrypted in the recipient's browser.  The message will be deleted.  You are responsible for delivering the key to the recipient.  This could be done through online chat/message/etc or in person.  At NO point can the Ephemeral server know your message.
+                The message is 128 bit AES encrypted in your browser before it is sent to the server.  You may choose the password, or use a randomly generated password.  Keys are generated with salted PBKDF2.  The server stores only the encrypted message, and never sees the key.  The URL will deliver the encrypted message to the recipient, and it will be decrypted in the recipient's browser.  The message will be deleted.  You are responsible for delivering the key to the recipient.  This could be done through online chat/message/text/etc or in person.  At NO point can the Ephemeral server know your message.
 
                 <br><br>
                 <img src="/static/images/architecture_client_send.png">
@@ -44,10 +44,17 @@
                 <img src="/static/images/architecture_server_send.png">
                 <img src="/static/images/architecture_server_receive.png">
 
+                <br><br><br>
+
+                <h2>Encrypted chat:</h2>
+
+                Ephemeral offers private, temporary, encrypted chatrooms.  The user chooses a password, from which a key is derived (salted PBKDF2).  All messages and nicknames are symmetrically encrypted by this key.  Encryption is done in the browser, so at NO point can the Ephemeral server decrypt any message or nickname.  No messages are persistently stored.  Each message is deleted after it has been sent to each member of the chat.  Invites are handled by one-time URLs.  Each invite URL will redirect to the chatroom only once.  This ensures the real chatroom URL is known only by those who have been invited, and doesn't leak the chatroom URL into an online chat/message/text/etc.  Chatrooms are destroyed when every member has left.
+
             <br><br><br><br>
             </div>
 
             <br><br>
+            <br>
 
             
            

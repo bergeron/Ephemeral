@@ -409,8 +409,8 @@ func createChatHandler(w http.ResponseWriter, r *http.Request) {
 	chatIdToHub[chatroomId] = &h
 
 	/* Insert chat, nickname into db */
-	_, err := db.Exec("insert into chatrooms values (?, ?, UTC_TIMESTAMP(6))", chatroomId, salt)
-	_, err = db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP(6))", nicknameId, chatroomId, encryptedNickname)
+	_, err := db.Exec("insert into chatrooms values (?, ?, UTC_TIMESTAMP())", chatroomId, salt)
+	_, err = db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -490,7 +490,7 @@ func setNicknameHandler(w http.ResponseWriter, r *http.Request) {
 	chatroomId := r.FormValue("chatroomId")
 	encryptedNickname := r.FormValue("encryptedNickname")
 
-	_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP(6))", nicknameId, chatroomId, encryptedNickname)
+	_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -554,7 +554,7 @@ func inviteCreateHandler(w http.ResponseWriter, r *http.Request) {
 	inviteId := generateTableId(db, "invites")
 	chatroomId := r.FormValue("chatroomId")
 
-	_, err := db.Exec("insert into invites values (?, ?, UTC_TIMESTAMP(6))", inviteId, chatroomId)
+	_, err := db.Exec("insert into invites values (?, ?, UTC_TIMESTAMP())", inviteId, chatroomId)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

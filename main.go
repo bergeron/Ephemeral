@@ -23,46 +23,47 @@ import (
 	_ "github.com/gorilla/websocket"
 )
 
+var db *sql.DB = connectDb()
+var chatIdToHub map[string]*hub = make(map[string]*hub)
+
 func main() {
-
-	db, err := connectDb()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/about/", aboutHandler)
-	http.HandleFunc("/create/server/", createServerHandler(db))
-	http.HandleFunc("/create/client/", createClientHandler(db))
-	http.HandleFunc("/view/server/", viewServerHandler(db))
-	http.HandleFunc("/view/client/", viewClientHandler(db))
-	http.HandleFunc("/chat/", chatHandler(db))
-	http.HandleFunc("/chat/create/", createChatHandler(db))
-	http.HandleFunc("/chat/addMsg/", addMsgChatHandler(db))
-	http.HandleFunc("/chat/update/", updateChatHandler(db))
-	http.HandleFunc("/chat/setNickname/", setNicknameHandler(db))
-	http.HandleFunc("/invite/", inviteHandler(db))
-
+	http.HandleFunc("/create/server/", createServerHandler)
+	http.HandleFunc("/create/client/", createClientHandler)
+	http.HandleFunc("/view/server/", viewServerHandler)
+	http.HandleFunc("/view/client/", viewClientHandler)
+	http.HandleFunc("/chat/", chatHandler)
+	http.HandleFunc("/chat/create/", createChatHandler)
+	http.HandleFunc("/chat/setNickname/", setNicknameHandler)
+	http.HandleFunc("/chat/ws", serveWs)
+	http.HandleFunc("/invite/", inviteHandler)
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	/* SSL/TLS */
-	// path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
-	// path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-	err = http.ListenAndServe(":11994", nil)
+	err := http.ListenAndServe(":11994", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	/* SSL/TLS */
+	// path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
+	// path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
+	// err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
-func connectDb() (*sql.DB, error){
+func connectDb() (*sql.DB){
 
 	/* Load config file */
 	file, err := os.Open("mysql.priv")
 	defer file.Close()
 	if err != nil {
-		return nil, errors.New("Could not find mysql.priv")
+		fmt.Println("Could not find mysql.priv")
+		return nil
 	}
 
 	bio := bufio.NewReader(file)
@@ -72,16 +73,18 @@ func connectDb() (*sql.DB, error){
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
-		return nil, err
+		fmt.Println(err.Error())
+		return nil
 	}
 
-	/* Actually try to connect */
+	/* Test connection */
 	err = db.Ping()
 	if err != nil {
-		return nil, err
+		fmt.Println(err.Error())
+		return nil
 	}
 
-	return db, nil
+	return db
 }
 
 /* Write the given error message as HTML */
@@ -147,559 +150,417 @@ func decrypt(key, text []byte) ([]byte, error) {
 }
 
 /* POST /create/server */
-func createServerHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func createServerHandler(w http.ResponseWriter, r *http.Request) {
 
-		text := r.FormValue("text")
-		if len(text) > 16000{
-			writeError(w, "Message too long. Max character length is 16000.")
-			return
+	text := r.FormValue("text")
+	if len(text) > 16000{
+		writeError(w, "Message too long. Max character length is 16000.")
+		return
+	}
+
+	msgId := generateTableId(db, "messages")
+
+	/* Generate 128 bit key */
+	key128bits := make([]byte, 16)
+	_, err := rand.Read(key128bits)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/* Encrypt the text */
+	encryptedtextBytes, err := encrypt(key128bits, []byte(text))
+	if err != nil {
+		log.Fatal(err)
+	}
+	encryptedtext := hex.EncodeToString(encryptedtextBytes)
+
+	/* Set expiration date */
+	expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
+	if err != nil {
+		expireMinutes = 43200	/* Default expire in 30 days */
+	}
+
+	/* Insert message into db */
+	_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
+						msgId, encryptedtext, nil, time.Now().Unix(), expireMinutes, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	format := r.FormValue("format")
+	if format == "url" {	/* Return only url */
+		url := "https://" + r.Host + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
+		w.Write([]byte(url))
+	} else {	/* Return html */
+		
+		type Out struct {
+			Host string
+			SecretString string
+			KeyString string
 		}
-
-		msgId := generateTableId(db, "messages")
-
-		/* Generate 128 bit key */
-		key128bits := make([]byte, 16)
-		_, err := rand.Read(key128bits)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		/* Encrypt the text */
-		encryptedtextBytes, err := encrypt(key128bits, []byte(text))
-		if err != nil {
-			log.Fatal(err)
-		}
-		encryptedtext := hex.EncodeToString(encryptedtextBytes)
-
-		/* Set expiration date */
-		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
-		if err != nil {
-			expireMinutes = 43200	/* Default expire in 30 days */
-		}
-
-		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
-							msgId, encryptedtext, nil, time.Now().Unix(), expireMinutes, true)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		format := r.FormValue("format")
-		if format == "url" {	/* Return only url */
-			url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
-			w.Write([]byte(url))
-		} else {	/* Return html */
-			
-			type Out struct {
-				Host string
-				SecretString string
-				KeyString string
-			}
-			data := Out{os.Getenv("EPHEMERAL_HOST"), msgId, hex.EncodeToString(key128bits)}
-			tmpl := template.Must(template.ParseFiles("static/html/create.html", "static/html/top.html", "static/html/head.html"))
-			tmpl.ExecuteTemplate(w, "create", data)
-		}
+		data := Out{r.Host, msgId, hex.EncodeToString(key128bits)}
+		tmpl := template.Must(template.ParseFiles("static/html/create.html", "static/html/top.html", "static/html/head.html"))
+		tmpl.ExecuteTemplate(w, "create", data)
 	}
 }
 
 /* POST /create/client */
-func createClientHandler (db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func createClientHandler(w http.ResponseWriter, r *http.Request) {
 
-		encryptedText := r.FormValue("text")
-		if len(encryptedText) > 16000{
-			writeError(w, "Message too long. Max character length is 16000.")
-			return
-		}
-
-		msgId := generateTableId(db, "messages")
-		salt := r.FormValue("salt")
-
-		fmt.Println("Create: ")
-		fmt.Println(salt)
-
-		/* Set expiration date */
-		expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
-		if err != nil {
-			expireMinutes = 43200	/* Default expire in 30 days */
-		}
-
-		/* Insert message into db */
-		_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
-							msgId, encryptedText, salt, time.Now().Unix(), expireMinutes, false)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		url := "https://" + os.Getenv("EPHEMERAL_HOST") + "/view/client/" + msgId
-		w.Write([]byte(url))
+	encryptedText := r.FormValue("text")
+	if len(encryptedText) > 16000{
+		writeError(w, "Message too long. Max character length is 16000.")
+		return
 	}
+
+	msgId := generateTableId(db, "messages")
+	salt := r.FormValue("salt")
+
+	/* Set expiration date */
+	expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
+	if err != nil {
+		expireMinutes = 43200	/* Default expire in 30 days */
+	}
+
+	/* Insert message into db */
+	_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
+						msgId, encryptedText, salt, time.Now().Unix(), expireMinutes, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	url := "https://" + r.Host + "/view/client/" + msgId
+	w.Write([]byte(url))
 }
 
 /* GET /view/server */
-func viewServerHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func viewServerHandler(w http.ResponseWriter, r *http.Request) {
 
-		/* Blacklist sites that GET the url before sending to recipient */
-		blacklist := [...]string{"facebook"}
-		
-		for _,e := range blacklist {
-			if strings.Contains(r.UserAgent(), e) {
-				fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
-				return
-			}
-		}
-
-		/* get query params */
-		queryString := strings.TrimSuffix(r.URL.Path[len("/view/server/"):],"/")
-		params := strings.Split(queryString, "/")
-		if len(params) != 2 {
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-
-		msgId := params[0]
-		keyString := params[1]
-		keyBytes, err := hex.DecodeString(keyString)
-		if err != nil {
-			fmt.Println("Key is not hex")
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-
-		var m sync.Mutex
-		m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
-
-		/* Lookup message in db */
-		var encryptedText string
-		err = db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
-		if err != nil {
-			fmt.Println("No message found with msgId: " + msgId)
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-
-		/* Decrypt message */
-		encryptedtextBytes , err := hex.DecodeString(encryptedText)
-		if err != nil {
-			fmt.Println("Error converting encryptedext from string to byte[]")
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-		messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
-		if err != nil {
-			fmt.Println("Valid msgId, but invalid key")
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-
-		message := template.HTMLEscapeString(string(messageBytes))	/* no XSS */
-
-		/* Delete message from db */
-		_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
-		if err != nil {
-			fmt.Println("Message already deleted.")		/* Shouldn't happen */
-		}
+	/* Blacklist sites that GET the url before sending to recipient */
+	blacklist := [...]string{"facebook"}
 	
-		m.Unlock()	/*DONE */
-
-		fmt.Println("Message Found!")
-
-		/* Write HTML */
-		type Out struct {
-			Success bool
-			Message []string
+	for _,e := range blacklist {
+		if strings.Contains(r.UserAgent(), e) {
+			fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
+			return
 		}
-		data := Out{true, strings.Split(message, "\n")}
-		tmpl := template.Must(template.ParseFiles("static/html/viewServer.html", "static/html/top.html", "static/html/head.html"))
-		tmpl.ExecuteTemplate(w, "viewServer", data)
 	}
+
+	/* get query params */
+	queryString := strings.TrimSuffix(r.URL.Path[len("/view/server/"):],"/")
+	params := strings.Split(queryString, "/")
+	if len(params) != 2 {
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+
+	msgId := params[0]
+	keyString := params[1]
+	keyBytes, err := hex.DecodeString(keyString)
+	if err != nil {
+		fmt.Println("Key is not hex")
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+
+	var m sync.Mutex
+	m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
+
+	/* Lookup message in db */
+	var encryptedText string
+	err = db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
+	if err != nil {
+		fmt.Println("No message found with msgId: " + msgId)
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+
+	/* Decrypt message */
+	encryptedtextBytes , err := hex.DecodeString(encryptedText)
+	if err != nil {
+		fmt.Println("Error converting encryptedext from string to byte[]")
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+	messageBytes, err := decrypt(keyBytes, []byte(encryptedtextBytes))
+	if err != nil {
+		fmt.Println("Valid msgId, but invalid key")
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+
+	message := template.HTMLEscapeString(string(messageBytes))	/* no XSS */
+
+	/* Delete message from db */
+	_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
+	if err != nil {
+		fmt.Println("Message already deleted.")		/* Shouldn't happen */
+	}
+
+	m.Unlock()	/*DONE */
+
+	fmt.Println("Message Found!")
+
+	/* Write HTML */
+	type Out struct {
+		Success bool
+		Message []string
+	}
+	data := Out{true, strings.Split(message, "\n")}
+	tmpl := template.Must(template.ParseFiles("static/html/viewServer.html", "static/html/top.html", "static/html/head.html"))
+	tmpl.ExecuteTemplate(w, "viewServer", data)
 }
 
 /* GET /view/client */
-func viewClientHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func viewClientHandler(w http.ResponseWriter, r *http.Request) {
 
-		/* Blacklist sites that GET the url before sending to recipient */
-		blacklist := [...]string{"facebook"}
-		
-		for _,e := range blacklist {
-			if strings.Contains(r.UserAgent(), e) {
-				fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
-				return
-			}
-		}
-
-		/* get query params */
-		queryString := strings.TrimSuffix(r.URL.Path[len("/view/client/"):],"/")
-		params := strings.Split(queryString, "/")
-		if len(params) != 1 {
-			writeError(w, "Message not found. It may have been deleted.")
+	/* Blacklist sites that GET the url before sending to recipient */
+	blacklist := [...]string{"facebook"}
+	
+	for _,e := range blacklist {
+		if strings.Contains(r.UserAgent(), e) {
+			fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
 			return
 		}
-		msgId := params[0]
-
-		var m sync.Mutex
-		m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
-
-		/* Lookup message in db */
-		var encryptedText string
-		var salt string
-		err := db.QueryRow("SELECT encrypted_text, salt FROM messages WHERE id = ?", msgId).Scan(&encryptedText, &salt)
-		if err != nil {
-			fmt.Println("No message found with msgId: " + msgId)
-			writeError(w, "Message not found. It may have been deleted.")
-			return
-		}
-
-		/* Delete message from db */
-		_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
-		if err != nil {
-			fmt.Println("Message already deleted.")		/* Shouldn't happen */
-		}
-
-		m.Unlock()	/*DONE */
-
-		fmt.Println("Message Found!")
-
-		/* Write HTML */
-		type Out struct {
-			Success bool
-			Message string
-			Salt string
-		}
-		data := Out{true, encryptedText, salt}
-		tmpl := template.Must(template.ParseFiles("static/html/viewClient.html", "static/html/top.html", "static/html/head.html"))
-		tmpl.ExecuteTemplate(w, "viewClient", data)
 	}
+
+	/* get query params */
+	queryString := strings.TrimSuffix(r.URL.Path[len("/view/client/"):],"/")
+	params := strings.Split(queryString, "/")
+	if len(params) != 1 {
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+	msgId := params[0]
+
+	var m sync.Mutex
+	m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
+
+	/* Lookup message in db */
+	var encryptedText string
+	var salt string
+	err := db.QueryRow("SELECT encrypted_text, salt FROM messages WHERE id = ?", msgId).Scan(&encryptedText, &salt)
+	if err != nil {
+		fmt.Println("No message found with msgId: " + msgId)
+		writeError(w, "Message not found. It may have been deleted.")
+		return
+	}
+
+	 /* Delete message from db */
+	_, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
+	if err != nil {
+		fmt.Println("Message already deleted.")		/* Shouldn't happen */
+	}
+
+	m.Unlock()	/*DONE */
+
+	fmt.Println("Message Found!")
+
+	/* Write HTML */
+	type Out struct {
+		Success bool
+		Message string
+		Salt string
+	}
+	data := Out{true, encryptedText, salt}
+	tmpl := template.Must(template.ParseFiles("static/html/viewClient.html", "static/html/top.html", "static/html/head.html"))
+	tmpl.ExecuteTemplate(w, "viewClient", data)
 }
 
 /* GET /chat */
-func chatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func chatHandler(w http.ResponseWriter, r *http.Request) {
 
-		queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
-		params := strings.Split(queryString, "/")
+	queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
+	params := strings.Split(queryString, "/")
 
-		if len(params) == 2 {
-			viewChatHandler(db)(w,r)
-		} else {
+	if len(params) == 2 {
+		viewChatHandler(w,r)
+	} else {
 
-			type Out struct {
-				Creating bool
-			}
-			tmpl := template.Must(template.ParseFiles("static/html/chatCreate.html", "static/html/top.html", "static/html/head.html", "static/html/chat.html", "static/html/chatPrompt.html"))
-			tmpl.ExecuteTemplate(w, "chatCreate", Out{true})
+		type Out struct {
+			Creating bool
 		}
+		tmpl := template.Must(template.ParseFiles("static/html/chatCreate.html", "static/html/top.html", "static/html/head.html", 
+												"static/html/chat.html", "static/html/chatPrompt.html"))
+		tmpl.ExecuteTemplate(w, "chatCreate", Out{true})
 	}
 }
 
 /* POST /chat/create */
-func createChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func createChatHandler(w http.ResponseWriter, r *http.Request) {
 
-		chatroomId := generateTableId(db, "chatrooms")
-		chatMsgId := generateTableId(db, "messages")
-		nicknameId := generateTableId(db, "nicknames")
-		encryptedNickname := r.FormValue("encryptedNickname")
-		encryptedWelcome := r.FormValue("encryptedWelcome")
-		salt := r.FormValue("salt")
+	chatroomId := generateTableId(db, "chatrooms")
+	chatMsgId := generateTableId(db, "messages")
+	nicknameId := generateTableId(db, "nicknames")
+	encryptedNickname := r.FormValue("encryptedNickname")
+	salt := r.FormValue("salt")
 
-		fmt.Println(encryptedWelcome)
-
-		/* Insert chat, nickname into db */
-		expireMinutes := 43200	/* Default expire in 30 days */
-		_, err := db.Exec("insert into chatrooms values (?, ?, UTC_TIMESTAMP(6))", chatroomId, salt)
-		_, err = db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP(6))", nicknameId, chatroomId, encryptedNickname)
-		_, err = db.Exec("insert into chat_msgs values (?, ?, ?, ?, ?, UTC_TIMESTAMP(6), ?)", chatMsgId, chatroomId, encryptedWelcome, encryptedNickname, 0, expireMinutes)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		type Resp struct {
-			ChatroomId 	string
-			NicknameId 	string
-			OldestId 	string
-		}
-
-		json, err := json.Marshal(Resp{chatroomId, nicknameId, chatMsgId})
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			fmt.Println(err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(json)
+	/* New hub to broadcast messages to chatroom */
+	var h = hub{
+		chatroomId:	 chatroomId,
+		broadcast:   make(chan []byte),
+		register:    make(chan *connection),
+		unregister:  make(chan *connection),
+		connections: make(map[*connection]bool),
 	}
+
+	go h.run()
+
+	chatIdToHub[chatroomId] = &h
+
+	/* Insert chat, nickname into db */
+	_, err := db.Exec("insert into chatrooms values (?, ?, UTC_TIMESTAMP())", chatroomId, salt)
+	_, err = db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	type Resp struct {
+		ChatroomId 	string
+		NicknameId 	string
+		OldestId 	string
+	}
+
+	json, err := json.Marshal(Resp{chatroomId, nicknameId, chatMsgId})
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		fmt.Println(err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
 }
 
 /* GET /chat/chatroomId */
-func viewChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func viewChatHandler(w http.ResponseWriter, r *http.Request) {
 
-		/* get query params */
-		queryString := strings.TrimSuffix(r.URL.Path[len("/chat/"):],"/")
-		params := strings.Split(queryString, "/")
-		if len(params) != 1 {
-			writeError(w, "Chatroom not found. It may have been deleted.")
-			return
-		}
-
-		chatroomId := params[0]
-
-		var salt string
-		err := db.QueryRow("SELECT salt FROM chatrooms WHERE id = ?", chatroomId).Scan(&salt)
-		if err != nil{
-			fmt.Println(err.Error())
-			writeError(w, "Chatroom not found. It may have been deleted!!!.")
-			return
-		}
-
-		rows, err := db.Query("SELECT encrypted_nickname FROM nicknames WHERE chatroom_id=?", chatroomId)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		nicknames := []string{}
-
-		defer rows.Close()
-	    for rows.Next() {
-			var encrypted_nickname string
-			err = rows.Scan(&encrypted_nickname)
-			nicknames = append(nicknames, encrypted_nickname)
-		}
-		err = rows.Err()
-
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		type Out struct {
-			Salt string
-			EncryptedNicknames []string
-			Creating bool
-		}
-
-		tmpl := template.Must(template.ParseFiles("static/html/chatView.html", "static/html/top.html", "static/html/head.html", "static/html/chat.html", "static/html/chatPrompt.html"))
-		tmpl.ExecuteTemplate(w, "chatView", Out{salt, nicknames, false})
+	/* get query params */
+	queryString := strings.TrimSuffix(r.URL.Path[len("/chat/"):],"/")
+	params := strings.Split(queryString, "/")
+	if len(params) != 1 {
+		writeError(w, "Chatroom not found. It may have been deleted.")
+		return
 	}
-}
 
-/* POST /chat/addmsg */
-func addMsgChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+	chatroomId := params[0]
 
-		chatMsgId := generateTableId(db, "chat_msgs")
-		chatroomId := r.FormValue("chatroomId")
-		encryptedText := r.FormValue("encryptedText")
-		nicknameId := r.FormValue("nicknameId")
+	var salt string
+	err := db.QueryRow("SELECT salt FROM chatrooms WHERE id = ?", chatroomId).Scan(&salt)
+	if err != nil{
+		fmt.Println(err.Error())
+		writeError(w, "Chatroom not found. It may have been deleted!")
+		return
+	}
+
+	rows, err := db.Query("SELECT encrypted_nickname FROM nicknames WHERE chatroom_id=?", chatroomId)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	nicknames := []string{}
+
+	defer rows.Close()
+    for rows.Next() {
 		var encrypted_nickname string
-
-		err := db.QueryRow("SELECT encrypted_nickname FROM nicknames WHERE id= ?", nicknameId).Scan(&encrypted_nickname)
-		if err != nil {
-			fmt.Println("No nickname found with id: " + nicknameId)
-			writeError(w, "Nickname not found.")
-			return
-		}
-
-		/* Lookup chat in db */
-		err = db.QueryRow("SELECT id FROM chatrooms WHERE id= ?", chatroomId).Scan(&chatroomId)
-		if err != nil {
-			fmt.Println("No chatroom found with chatroom_id: " + chatroomId)
-			writeError(w, "Chatroom not found. It may have been deleted.")
-			return
-		}
-
-		/* Insert message into db */
-		expireMinutes := 43200	/* Default expire in 30 days */
-		_, err = db.Exec("insert into chat_msgs values (?, ?, ?, ?, ?, UTC_TIMESTAMP(6), ?)", 
-							chatMsgId, chatroomId, encryptedText, encrypted_nickname, 0, expireMinutes)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		w.Write([]byte("added message"))
-
+		err = rows.Scan(&encrypted_nickname)
+		nicknames = append(nicknames, encrypted_nickname)
 	}
-}
+	err = rows.Err()
 
-
-/* GET /chat/update */
-func updateChatHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
-
-		chatroomId := r.FormValue("chatroomId")
-		dtUpdateAfter := r.FormValue("dtUpdateAfter")
-
-		fmt.Println(dtUpdateAfter)
-
-		rows, err := db.Query("SELECT id, encrypted_text, encrypted_nickname, views FROM chat_msgs WHERE chatroom_id=? and dt_created >= ? ORDER BY dt_created ASC", chatroomId, dtUpdateAfter)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		var newDtUpdateAfter string
-		err = db.QueryRow("select UTC_TIMESTAMP(6)").Scan(&newDtUpdateAfter)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		var numMembers int
-		db.QueryRow("SELECT COUNT(*) from nicknames WHERE chatroom_id=?", chatroomId).Scan(&numMembers)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		type ChatMsg struct{
-			EncryptedText 	string
-			EncryptedNickname 	string
-		}
-
-		msgs := []ChatMsg{}
-
-		defer rows.Close()
-		for rows.Next() {
-			var id string
-			var encrypted_text string
-			var encrypted_nickname string
-			var views int
-			err = rows.Scan(&id, &encrypted_text, &encrypted_nickname, &views)
-
-			// /* Delete the msg. Everyone has seen it. */
-			// if (views + 1) == numMembers {
-			// 	_, err = db.Exec("DELETE FROM chat_msgs WHERE id = ?", id)
-			// 	if err != nil {
-			// 		fmt.Println(err.Error())
-			// 	}
-			// } else {
-			// 	// increment views
-			// }
-
-			msgs = append(msgs, ChatMsg{encrypted_text, encrypted_nickname})
-		}
-		err = rows.Err()
-
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		type Resp struct{
-			Messages 	[]ChatMsg
-			DtUpdateAfter 	string
-		}
-
-		json, err := json.Marshal(Resp{msgs, newDtUpdateAfter})
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			fmt.Println(err)
-			return
-		}
-
-	    w.Header().Set("Content-Type", "application/json")
-	    w.Write(json)
-
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+
+	type Out struct {
+		Salt string
+		EncryptedNicknames []string
+		Creating bool
+	}
+
+	tmpl := template.Must(template.ParseFiles("static/html/chatView.html", "static/html/top.html", "static/html/head.html", "static/html/chat.html", "static/html/chatPrompt.html"))
+	tmpl.ExecuteTemplate(w, "chatView", Out{salt, nicknames, false})
 }
 
 /* POST /chat/setNickname */
-func setNicknameHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func setNicknameHandler(w http.ResponseWriter, r *http.Request) {
 
-		chatMsgId := generateTableId(db, "messages")
-		nicknameId := generateTableId(db, "nicknames")
-		chatroomId := r.FormValue("chatroomId")
-		encryptedNickname := r.FormValue("encryptedNickname")
-		encryptedWelcome := r.FormValue("encryptedWelcome")
+	nicknameId := generateTableId(db, "nicknames")
+	chatroomId := r.FormValue("chatroomId")
+	encryptedNickname := r.FormValue("encryptedNickname")
 
-		expireMinutes := 43200	/* Default expire in 30 days */
-		_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP(6))", nicknameId, chatroomId, encryptedNickname)
-		_, err = db.Exec("insert into chat_msgs values (?, ?, ?, ?, ?, UTC_TIMESTAMP(6), ?)", chatMsgId, chatroomId, encryptedWelcome, encryptedNickname, 0, expireMinutes)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		type Resp struct{
-			NicknameId 	string
-		}
-
-		json, err := json.Marshal(Resp{nicknameId})
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			fmt.Println(err.Error())
-			return
-		}
-
-		w.Write([]byte(json))
+	_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+
+	data := map[string]string{
+	    "nicknameId": nicknameId,
+	    "encryptedText": encryptedNickname,
+	}
+
+	hub := chatIdToHub[chatroomId]
+	hub.broadcast <- parseMessage("newMember", data)
+	w.Write([]byte(nicknameId))
 }
 
 /* /chat/invite/ */
-func inviteHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func inviteHandler(w http.ResponseWriter, r *http.Request) {
 
-		queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
-		params := strings.Split(queryString, "/")
+	queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
+	params := strings.Split(queryString, "/")
 
-		if len(params) == 2 {
-			inviteViewHandler(db)(w,r)
-		} else {
-			inviteCreateHandler(db)(w,r)
-		}
+	if len(params) == 2 {
+		inviteViewHandler(w,r)
+	} else {
+		inviteCreateHandler(w,r)
 	}
 }
 
 /* GET /invite/inviteId */
-func inviteViewHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func inviteViewHandler(w http.ResponseWriter, r *http.Request) {
 
-		/* get query params */
-		queryString := strings.TrimSuffix(r.URL.Path[len("/invite/"):],"/")
-		params := strings.Split(queryString, "/")
-		if len(params) != 1 {
-			writeError(w, "Invite not found. It may have been deleted.")
-			return
-		}
-
-		inviteId := params[0]
-
-		var chatroomId string
-		err := db.QueryRow("SELECT chatroom_id FROM invites WHERE id=?", inviteId).Scan(&chatroomId)
-		if err != nil {
-			writeError(w, "Invite not found. It may have already been used.")
-			return
-		}
-
-		/* Delete invite from db */
-		_, err = db.Exec("DELETE FROM invites WHERE id = ?", inviteId)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		url := "http://localhost:11994/chat/" + chatroomId
-		http.Redirect(w, r, url, 303)		
+	/* get query params */
+	queryString := strings.TrimSuffix(r.URL.Path[len("/invite/"):],"/")
+	params := strings.Split(queryString, "/")
+	if len(params) != 1 {
+		writeError(w, "Invite not found. It may have been deleted.")
+		return
 	}
+
+	inviteId := params[0]
+
+	var chatroomId string
+	err := db.QueryRow("SELECT chatroom_id FROM invites WHERE id=?", inviteId).Scan(&chatroomId)
+	if err != nil {
+		writeError(w, "Invite not found. It may have already been used.")
+		return
+	}
+
+	/* Delete invite from db */
+	_, err = db.Exec("DELETE FROM invites WHERE id = ?", inviteId)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	url := "https://" + r.Host + "/chat/" + chatroomId
+	http.Redirect(w, r, url, 303)		
 }
 
 /* POST /invite */
-func inviteCreateHandler(db *sql.DB) func(http.ResponseWriter, *http.Request) {
-	return  func(w http.ResponseWriter, r *http.Request) {
+func inviteCreateHandler(w http.ResponseWriter, r *http.Request) {
 
-		inviteId := generateTableId(db, "invites")
-		chatroomId := r.FormValue("chatroomId")
+	inviteId := generateTableId(db, "invites")
+	chatroomId := r.FormValue("chatroomId")
 
-		_, err := db.Exec("insert into invites values (?, ?, UTC_TIMESTAMP(6))", inviteId, chatroomId)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		w.Write([]byte(inviteId))
+	_, err := db.Exec("insert into invites values (?, ?, UTC_TIMESTAMP())", inviteId, chatroomId)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+
+	w.Write([]byte(inviteId))
 }
 
 /* Generate unique 128 random bits */
@@ -726,5 +587,24 @@ func generateTableId(db *sql.DB, tablename string) string {
 		return id
 	} else {
 		return generateTableId(db, tablename)
+	}
+}
+
+func deleteChatroom(chatroomId string){
+	delete(chatIdToHub, chatroomId)
+
+	_, err := db.Exec("DELETE FROM chatrooms WHERE id = ?", chatroomId)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	_, err = db.Exec("DELETE FROM nicknames WHERE chatroom_id = ?", chatroomId)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	_, err = db.Exec("DELETE FROM invites WHERE chatroom_id = ?", chatroomId)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 }

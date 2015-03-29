@@ -3,10 +3,9 @@
 # Drops and recreates tables according to schema.
 
 messages_schema="(id VARBINARY(32) NOT NULL,encrypted_text VARBINARY(43688) NOT NULL,salt VARCHAR(255),dt_created_epoch BIGINT NOT NULL,expire_minutes INT,server_encrypted BOOLEAN NOT NULL)"
-chatrooms_schema="(id VARBINARY(32) NOT NULL,salt VARCHAR(255) NOT NULL,dt_created DATETIME(6) NOT NULL)"
-nicknames_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,encrypted_nickname VARCHAR(255) NOT NULL,dt_created DATETIME(6) NOT NULL)"
-chat_msgs_schema="(id VARBINARY(32)NOT NULL ,chatroom_id VARBINARY(32) NOT NULL,encrypted_text VARBINARY(43688) NOT NULL,encrypted_nickname VARCHAR(255),views INT DEFAULT 0,dt_created DATETIME(6) NOT NULL,expire_minutes INT)"
-invites_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,dt_created DATETIME(6) NOT NULL)"
+chatrooms_schema="(id VARBINARY(32) NOT NULL,salt VARCHAR(255) NOT NULL,dt_created DATETIME NOT NULL)"
+nicknames_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,encrypted_nickname VARCHAR(255) NOT NULL,dt_created DATETIME NOT NULL)"
+invites_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,dt_created DATETIME NOT NULL)"
 
 db_name=$(sed -n '1p' < mysql.priv)
 username=$(sed -n '2p' < mysql.priv)
@@ -23,9 +22,6 @@ echo $chatrooms_schema | tr , "\n"
 echo ""
 echo "nicknames:"
 echo $nicknames_schema | tr , "\n"
-echo ""
-echo "chat_msgs:"
-echo $chat_msgs_schema | tr , "\n"
 echo ""
 echo "invites:"
 echo $invites_schema | tr , "\n"
@@ -57,8 +53,6 @@ run_mysql_cmd (){
 `run_mysql_cmd "create table chatrooms $chatrooms_schema;"`
 `run_mysql_cmd "drop table nicknames;"`
 `run_mysql_cmd "create table nicknames $nicknames_schema;"`
-`run_mysql_cmd "drop table chat_msgs;"`
-`run_mysql_cmd "create table chat_msgs $chat_msgs_schema;"`
 `run_mysql_cmd "drop table invites;"`
 `run_mysql_cmd "create table invites $invites_schema;"`
 echo "Database reset."

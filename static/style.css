@@ -55,7 +55,7 @@ a:hover{
     padding-top: 3px;
     font-size: 25px;
     line-height: 40px;
-    background-image: url('corner.png');
+    background-image: url('images/corner.png');
 }
 
 #corner a{
@@ -157,7 +157,7 @@ a:hover{
 	color: white;
 	background: black;
 	font-size: 20px;
-	padding: 15px 40px;
+	padding: 15px 30px;
     margin-bottom: 2px;
 	outline: none;
 	border: 5px solid #36D7B7;
@@ -196,13 +196,18 @@ textarea{
     margin-bottom: 30px;
     min-height: 250px;
     font-size: 20px;
+    /*display: none; /*sdfsfsd*/*/
 }
 
 #encryptBox input[type="text"]{
     margin-top: 10px;
     font-size: 20px;
-    width: 300px;
     margin-left: 10px;
+}
+
+#difference{
+    text-align:center;
+    margin-top:5px;
 }
 
 #result{
@@ -224,7 +229,103 @@ textarea{
 
 @media (max-device-width: 500px) {
     #about{
-        font-size: 14e
-        px;
+        font-size: 14px;
+    }
+}
+
+#chatRoom{
+    display: none;
+    overflow: hidden;
+    max-width: 750px;
+    padding: 10px;
+}
+
+.chatMsg{
+    margin-bottom: 11px;
+    word-wrap: break-word;
+    margin-right: 150px;
+}
+
+.msgText{
+
+}
+
+.nickname{
+    font-weight: bold;
+}
+
+#chatPrompt{
+    width: 500px;
+    font-size: 20px;
+}
+
+#chatPrompt input[type="text"]{
+    margin-left: 10px;
+    margin-bottom: 5px;
+    height: 20px;
+}
+
+#messages{
+}
+
+#chatRoomWindow{
+    overflow-y: auto;
+    background-color: white;
+    height: 400px;
+    padding: 10px;
+}
+
+#membersUl{
+    overflow: hidden;
+    border-width: 1px;
+    border-style:solid;
+    padding-left: 23px;
+    padding-top: 3px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+#members {
+    position: absolute;
+    width:130px;
+    font-weight: bold;
+}
+
+#membersWrapper{
+    float:right;
+    margin-right: 138px;
+}
+
+
+#inviteBtn{
+    display: none;
+}
+
+#messageText{
+    width: 75%;
+    height: 20px;
+    margin-top: 10px
+}
+
+#inviteWell{
+    display: none;
+}
+
+#giveMessage{
+    display: none;
+}
+
+#inviteInstructions{
+    display: none;
+}
+
+@media (max-width: 750px) {
+    #members{
+        display: none;
+    }
+
+    .chatMsg{
+        margin-right: 0px;
     }
 }

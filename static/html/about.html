@@ -31,8 +31,8 @@
                 The message is 128 bit AES encrypted in your browser before it is sent to the server.  You may choose the password, or use a randomly generated password.  Keys are generated with salted PBKDF2.  The server stores only the encrypted message, and never sees the key.  The URL will deliver the encrypted message to the recipient, and it will be decrypted in the recipient's browser.  The message will be deleted.  You are responsible for delivering the key to the recipient.  This could be done through online chat/message/etc or in person.  At NO point can the Ephemeral server know your message.
 
                 <br><br>
-                <img src="/static/architecture_client_send.png">
-                <img src="/static/architecture_client_receive.png">
+                <img src="/static/images/architecture_client_send.png">
+                <img src="/static/images/architecture_client_receive.png">
 
                 <br><br><br>
 
@@ -41,8 +41,8 @@
                 The message is sent to the server over SSL.  It is 128 bit AES encrypted with a random key.  The key is sent back to you in a URL, and is never persistently stored on the server.  When the recipient visits the URL the message is decrypted, delivered to the recipient, and deleted.  Because encryption keys are deleted, they exist only in the URL on your clipboard.  Ephemeral cannot decrypt any messages in its database.
 
                 <br><br>
-                <img src="/static/architecture_server_send.png">
-                <img src="/static/architecture_server_receive.png">
+                <img src="/static/images/architecture_server_send.png">
+                <img src="/static/images/architecture_server_receive.png">
 
             <br><br><br><br>
             </div>

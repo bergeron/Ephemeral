@@ -4,25 +4,34 @@
     <head>
         {{template "head" .}}
         <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
-        <script language="javascript" type="text/javascript" src="/static/chatCreate.js"></script>
+        <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/js/chat.js"></script>
     </head>
     <body>
 
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignRelaxed">
-            <h1>1. Choose a password</h1><br>
-            <h1>2. Invite participants</h1><br>
-            <h1>3. Chat with temporary, encrypted messages</h1><br>
+            <div id ="chatInstructions">
+                <h1>1. Choose a password</h1><br>
+                <h1>2. Invite participants</h1><br>
+                <h1>3. Chat with temporary, encrypted messages</h1><br>
+            </div>
+
+            {{template "chatPrompt" .}}
+
         </div>
 
         <br>
         <div id="encryptBox" class="center">
-            <!-- <form onsubmit="return generate(passwordSource.value);" style="overflow: hidden;">
+            <form onsubmit="return create(nickname.value, passwordSource.value);" style="overflow: hidden;">
+                Nickname: <input id="nickname" name="nickname" type="text" style="width: 200px;">
+                <br><hr><br>
+
                 <input type="radio" name="passwordSource" value="rand" onclick="customPassword.value='';customPassword.disabled=true" checked> 
                     Random 128 bit password<br>
                 <input type="radio" name="passwordSource" value="custom" onclick="customPassword.disabled=false"> 
-                    Custom password: <input id="customPassword" type="text" disabled> <br>
+                    Custom password: <input id="customPassword" type="text" style="width: 300px;" disabled> <br>
                 <br>
                 <button id="createBtn" class="submitBtn" style="float: right;">Create</button>
             </form>
@@ -32,11 +41,12 @@
             <div id="result" class="center">
                 <div id="finishedMessage" class="well700">
                 </div>
-            </div> -->
-
-            Coming soon
+            </div>
 
         </div>
+
+        {{template "chat" .}}
+        </body>
 
     </body>
 </html>

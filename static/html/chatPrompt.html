@@ -1,0 +1,23 @@
+{{define "chatPrompt"}}
+
+    
+    <div id="chatPrompt" {{if .Creating}}style="display:none"{{end}} class="center"> 
+
+        <form onsubmit="return openChat(password.value, nickname.value);">
+            Password:<input id="promptPwd" name="password" type="text" size=25><br>
+            Nickname:<input id="promptNickname" name="nickname" type="text" size=10><br><br>
+            <button type="submit" id="openChatBtn" class="submitBtn">Open Chat</button>
+        </form>
+
+        <button id="inviteBtn" onclick="invite()" class="submitBtn">Generate Invite URL</button>
+
+        <span id="inviteInstructions" style="font-size:15px">
+        Each URL will allow 1 person to enter the chatroom.<br>
+        <hr>
+        </span>
+
+        <div id="inviteWell" class="well700">
+        </div>
+    </div>
+
+{{end}}

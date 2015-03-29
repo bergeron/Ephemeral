@@ -5,7 +5,7 @@
         {{template "head" .}}
         <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
         <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
-        <script language="javascript" type="text/javascript" src="/static/encrypt.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/js/encrypt.js"></script>
     </head>
     <body>
 
@@ -30,10 +30,10 @@
             <div class="center" style="display: table">
                 <button id="encryptInBrowser" class="submitBtn" type="button" onclick="choosePwd()"> Encrypt in Browser </button>
                 &nbsp;
-                <input class="submitBtn" type="submit" value="Encrypt on Server">
+                <button class="submitBtn" type="submit">Encrypt on Server</button>
             </div>
 
-            <div style="text-align:center;margin-top:5px">
+            <div id="difference">
                 What's the difference? See <a href="/about"> about </a> 
             </div>
         </form>
@@ -46,7 +46,7 @@
                 <input type="radio" name="passwordSource" value="rand" onclick="customPassword.value='';customPassword.disabled=true" checked> 
                     Random 128 bit password<br>
                 <input type="radio" name="passwordSource" value="custom" onclick="customPassword.disabled=false"> 
-                    Custom password: <input id="customPassword" type="text" disabled> <br>
+                    Custom password: <input id="customPassword" type="text" style="width: 300px;" disabled> <br>
                 <br>
                 <button id="createBtn" class="submitBtn" style="float: right;">Create</button>
             </form>

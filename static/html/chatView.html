@@ -1,0 +1,30 @@
+{{define "chatView"}}
+<!DOCTYPE HTML>
+<html>
+    <head>
+        {{template "head" .}}
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+        <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/js/chat.js"></script>
+        <script language="javascript">
+            var salt = {{.Salt}};
+            var encryptedNicknames = {{.EncryptedNicknames}}
+        </script>
+
+    </head>
+    <body>
+
+        {{template "top" .}}
+
+        <div id="whiteStrip">
+
+            {{template "chatPrompt" .}}
+            
+        </div>
+
+        <br>
+        {{template "chat" .}}
+
+    </body>
+</html>
+{{end}}

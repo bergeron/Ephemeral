@@ -97,7 +97,7 @@ function openWebSocket(){
 		return;
 	}
 
-	socket = new WebSocket("ws://ephemeral.pw/chat/ws?chatroomId=" + chatroomId);
+	socket = new WebSocket("wss://ephemeral.pw/chat/ws?chatroomId=" + chatroomId);
     socket.onopen = function(event){
 		sendMsg('has joined the chat');
     }

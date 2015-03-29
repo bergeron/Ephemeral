@@ -42,11 +42,6 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	err := http.ListenAndServe(":11994", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	/* SSL/TLS */
 	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
 	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"

@@ -152,7 +152,6 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h := chatIdToHub[chatroomId]
-
 	c := &connection{chatroomId: chatroomId, hub: h, send: make(chan []byte, 256), ws: ws}
 	c.hub.register <- c
 	go c.writePump()

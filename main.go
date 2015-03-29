@@ -516,6 +516,16 @@ func inviteHandler(w http.ResponseWriter, r *http.Request) {
 /* GET /invite/inviteId */
 func inviteViewHandler(w http.ResponseWriter, r *http.Request) {
 
+	/* Blacklist sites that GET the url before sending to recipient */
+	blacklist := [...]string{"facebook"}
+	
+	for _,e := range blacklist {
+		if strings.Contains(r.UserAgent(), e) {
+			fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
+			return
+		}
+	}
+
 	/* get query params */
 	queryString := strings.TrimSuffix(r.URL.Path[len("/invite/"):],"/")
 	params := strings.Split(queryString, "/")

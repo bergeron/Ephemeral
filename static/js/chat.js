@@ -180,10 +180,10 @@ function messageToHTML(nickname, text){
 	var messageHTML = '' +
 	'<div class="chatMsg">' +
 		'<span class="nickname" style="color: #' + color + ';">' +
-			nickname + ": " + 
+			escapeHtml(nickname) + ": " + 
 		'</span>' +
 		'<span class="msgText">' +
-			text +
+			escapeHtml(text) +
 		'</span>' +
 	'</div>';
 
@@ -194,6 +194,7 @@ function messageToHTML(nickname, text){
 }
 
 function addMember(nickname){
+	nickname = escapeHtml(nickname);
 	nicknames.push(nickname);
 	var color = randDarkColor();
 	colors.push(color);
@@ -230,3 +231,9 @@ function invite(){
 		console.log(status + ' ' + err);
 	});
 }
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+};

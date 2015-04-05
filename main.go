@@ -44,18 +44,12 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	/* SSL/TLS */
-	// path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
-	// path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-	// err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	err := http.ListenAndServe(":11994", nil)
+	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
+	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
+	err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func connectDb() (*sql.DB){

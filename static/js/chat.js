@@ -94,7 +94,7 @@ function decryptNicknames(){
 
 function openWebSocket(chatroomId){
 
-	socket = new WebSocket('ws://localhost:11994/chat/ws?chatroomId=' + chatroomId);
+	socket = new WebSocket('wss://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
     socket.onopen = function(event){
     	if(creating){
     		sendMsg('has joined the chatroom');
@@ -253,7 +253,7 @@ function invite(){
 		}
 	})
 	.done(function(inviteId) {
-		var inviteURL = 'http://localhost:11994/invite/' + inviteId;
+		var inviteURL = 'https://ephemeral.pw/invite/' + inviteId;
 		$('#inviteBtn').html('Regenerate Invite URL');
 		$('#inviteWell').html('Join the chat at: ' + inviteURL);
 		$('#inviteWell').show();

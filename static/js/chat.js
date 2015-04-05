@@ -255,7 +255,7 @@ function invite(){
 	.done(function(inviteId) {
 		var inviteURL = 'https://ephemeral.pw/invite/' + inviteId;
 		$('#inviteBtn').html('Regenerate Invite URL');
-		$('#inviteWell').html('Join the chat at: ' + inviteURL);
+		$('#inviteWell').html(inviteURL);
 		$('#inviteWell').show();
 	})
 	.fail(function(status, err){

@@ -51,25 +51,32 @@ var upgrader = websocket.Upgrader{
 }
 
 /* Converts to JSON */
-func parseMessage(msgType string, data map[string]string) []byte {
+func parseMessage(data map[string]string) []byte {
 
-	nicknameId := data["nicknameId"]
-	encryptedText := data["encryptedText"]
-	var encryptedNickname string
+	/* Convert nicknameId to encryptedNickname */
+	if data["msgType"] == "newMessage"{
 
-	err := db.QueryRow("SELECT encrypted_nickname FROM nicknames WHERE id= ?", nicknameId).Scan(&encryptedNickname)
-	if err != nil {
-		fmt.Println("No nickname found with id: " + nicknameId)
-		encryptedNickname = "Unknown"
+		nicknameId := data["nicknameId"]
+		var encryptedNickname string
+		err := db.QueryRow("SELECT encrypted_nickname FROM nicknames WHERE id= ?", nicknameId).Scan(&encryptedNickname)
+		if err != nil {
+			fmt.Println("No nickname found with id: " + nicknameId)
+			encryptedNickname = "Unknown"
+		}
+		delete(data, "nicknameId")
+		data["encryptedNickname"] = encryptedNickname
+
+	} else if data["msgType"] == "newMember"{
+		//
+	} else if data["msgType"] == "keyExchangeReq"{
+		//
+	} else if data["msgType"] == "keyExchangeResp"{
+		//
+	} else {
+		fmt.Println("Unknown Message Type")
 	}
 
-	type Msg struct {
-		Type 				string
-		EncryptedNickname 	string
-		EncryptedText 		string
-	}
-
-	json, err := json.Marshal(Msg{msgType, encryptedNickname, encryptedText})
+	json, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println(err.Error())
 		json = []byte("Error")
@@ -101,7 +108,7 @@ func (c *connection) readPump() {
 			break
 		}
 
-		c.hub.broadcast <- parseMessage("newMessage", data)
+		c.hub.broadcast <- parseMessage(data)
 	}
 }
 

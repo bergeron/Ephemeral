@@ -1,60 +1,75 @@
 /* chat.js */
 
-var socket;
-var key;
-var salt;
-var password;
 var chatroomId = $(location).attr('pathname').substring(6);
+var keypair = forge.pki.rsa.generateKeyPair({bits: 2048, e: 0x10001});
+var socket;
+var sharedSecret;
 var nicknameId;
 var nicknames = [];
 var colors = [];
 
 
 if (!window['WebSocket']) {
-	alert('Your browser does not support WebSockets. Ephemeral chat requires WebSockets');
+	alert('Your browser does not support WebSockets. Ephemeral chat requires WebSockets.');
 }
 
-function create(nickname, passwordSource){
+$(document).ready(function() {
 
-	try{
-		if(passwordSource == 'custom'){
-			password = $('#customPassword').val();
+	if(!creating){
+		openWebSocket(chatroomId);
+	}
+
+	$('#nicknameForm').submit(function(e){
+		if(creating){
+			create($('#nickname').val());
 		} else {
-			password = CryptoJS.lib.WordArray.random(128/8).toString();
+			if(sharedSecret == undefined){
+				console.log("Waiting for sharedSecret");
+				return false;
+			} else {
+				setNickname($('#nickname').val(), function(){
+    				sendMsg('has joined the chatroom');
+				});
+			}
 		}
+		openChatroom();
+		return false;
+	});
+});
 
-		salt = CryptoJS.lib.WordArray.random(128/8).toString();
-		key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
-		var encryptedNickname = CryptoJS.AES.encrypt(nickname, key).toString();
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+function openChatroom(){
+	$('#encryptBox').hide();
+	$('#chatInstructions').hide();
+	$('#openChatBtn').hide();
+
+	$('#chatPrompt').show();
+	$('#chatRoom').show();
+	$('#inviteBtn').show();
+	$('#inviteInstructions').show();
+}
+
+function create(nickname){
+	try{
+		
+		sharedSecret = CryptoJS.lib.WordArray.random(128/8).toString();
+		var encryptedNickname = CryptoJS.AES.encrypt(nickname, sharedSecret).toString();
 
 		$.ajax({
 			method: 'POST',
-			url: '/chat/create/',
-			data: {
-				encryptedNickname: 	encryptedNickname,
-				salt: 				salt
-			}
+			url: '/chat/create/'
 		})
 		.done(function(data) {
-			nicknameId = data.NicknameId;
 			chatroomId = data.ChatroomId;
-
-			$('#encryptBox').hide();
-			$('#chatInstructions').hide();
-			$('#openChatBtn').hide();
-
-			$('#chatPrompt').show();
-			$('#chatRoom').show();
-			$('#inviteBtn').show();
-			$('#inviteInstructions').show();
-
-			$('#promptPwd').val(password);
-			$('#promptPwd').prop('disabled', true);
-			$('#promptNickname').val(nickname);
-			$('#promptNickname').prop('disabled', true);
-
-			addMember(nickname);
-			openWebSocket();
+			setNickname(nickname, function(){
+				addMember(nickname);
+				openWebSocket(chatroomId);
+			});
 		})
 		.fail(function(status, err){
 			console.log(status + ' ' + err);
@@ -66,51 +81,59 @@ function create(nickname, passwordSource){
 	return false;
 }
 
-function openChat(pwd, nickname){
+function decryptNicknames(){
 	try{
-		password = pwd;
-		key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
 
 		for(var i=0; i < encryptedNicknames.length; i++){
-			addMember(CryptoJS.AES.decrypt(encryptedNicknames[i], key).toString(CryptoJS.enc.Utf8));
+			addMember(CryptoJS.AES.decrypt(encryptedNicknames[i], sharedSecret).toString(CryptoJS.enc.Utf8));
 		}
-
-		/* Duplicate nickname */
-		var origNickname = nickname;
-		var dupes = 0;
-		for(var i=0; i < nicknames.length; i++){
-			if(nicknames[i] == nickname){
-				nickname = origNickname + '(' + (dupes+1) + ')';
-				dupes ++;
-				i=0;
-			}
-		}
-				
-		setNickname(nickname, function(){
-			 openWebSocket();
-		});
-
 	} catch (e) {console.log(e)}
 
 	return false;
 }
 
-function openWebSocket(){
+function openWebSocket(chatroomId){
 
-	socket = new WebSocket('wss://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
+	socket = new WebSocket('ws://localhost:11994/chat/ws?chatroomId=' + chatroomId);
     socket.onopen = function(event){
-		sendMsg('has joined the chat');
+    	if(creating){
+    		sendMsg('has joined the chatroom');
+    	} else {
+    		initiateKeyExchange();
+    	}
     }
     socket.onmessage = function(event) {
     	var data = JSON.parse(event.data);
 
-    	if(data.Type == 'newMessage'){
-			var nickname = CryptoJS.AES.decrypt(data.EncryptedNickname, key).toString(CryptoJS.enc.Utf8);
-			var text = CryptoJS.AES.decrypt(data.EncryptedText, key).toString(CryptoJS.enc.Utf8);
+    	console.log(data);
+
+    	if(data.msgType == 'keyExchangeReq' && sharedSecret != undefined){
+    		var publicKey = forge.pki.publicKeyFromPem(data.publicKeyPem);
+    		var encrypted = publicKey.encrypt(sharedSecret);
+
+    		var msg = {
+				msgType: 				"keyExchangeResp",
+				chatroomId: 			chatroomId,
+				sharedSecretEncrypted: 	encrypted,
+				publicKeyPem: 			data.publicKeyPem
+    		};
+
+    		socket.send(JSON.stringify(msg));
+
+    	} else if(data.msgType == "keyExchangeResp" && sharedSecret == undefined && data.publicKeyPem == forge.pki.publicKeyToPem(keypair.publicKey)) {
+    		sharedSecret = keypair.privateKey.decrypt(data.sharedSecretEncrypted);
+    		decryptNicknames();
+
+    	} else if(data.msgType == 'newMessage'){
+			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
+			var text = CryptoJS.AES.decrypt(data.encryptedText, sharedSecret).toString(CryptoJS.enc.Utf8);
 			messageToHTML(nickname, text);
-		} else if(data.Type == 'newMember'){
-			var nickname = CryptoJS.AES.decrypt(data.EncryptedNickname, key).toString(CryptoJS.enc.Utf8);
+		} else if(data.msgType == 'newMember'){
+			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
 			addMember(nickname);
+		} else if(data.msgType == 'lostMember'){
+			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
+			//TODO
 		}
     }
     socket.onclose = function(event) {
@@ -128,14 +151,16 @@ function sendMsg(message){
 			return false;
 		}
 
-		var encryptedText = CryptoJS.AES.encrypt(message, key).toString();
+		var encryptedText = CryptoJS.AES.encrypt(message, sharedSecret).toString();
 		var msg = {
+			msgType: 		"newMessage",
 			chatroomId: 	chatroomId,
 			encryptedText: 	encryptedText,
 			nicknameId: 	nicknameId
 		};
 
 		socket.send(JSON.stringify(msg));
+
 		$('#messageText').val('');
 
 	} catch (e) {console.log(e);}
@@ -145,33 +170,39 @@ function sendMsg(message){
 
 function setNickname(nickname, fn){
 
-	var encryptedNickname = CryptoJS.AES.encrypt(nickname, key).toString();
+	try{
 
-	$.ajax({
-		method: 'POST',
-		url: '/chat/setNickname/',
-		data: {
-			chatroomId: 		chatroomId,
-			encryptedNickname: 	encryptedNickname
+	/* Duplicate nickname */
+		var origNickname = nickname;
+		var dupes = 0;
+		for(var i=0; i < nicknames.length; i++){
+			if(nicknames[i] == nickname){
+				nickname = origNickname + '(' + (dupes+1) + ')';
+				dupes ++;
+				i=0;
+			}
 		}
-	})
-	.done(function(data) {
-		nicknameId = data;
 
-		$('#openChatBtn').hide();
-		$('#promptPwd').prop('disabled', true);
-		$('#promptNickname').prop('disabled', true);
-		$('#chatRoom').show();
-		$('#inviteBtn').show();
-		$('#inviteInstructions').show();
+		var encryptedNickname = CryptoJS.AES.encrypt(nickname, sharedSecret).toString();
 
-		addMember(nickname);
-		fn();
-	})
-	.fail(function(status, err){
-		console.log(status + ' ' + err);
-	});
+		$.ajax({
+			method: 'POST',
+			url: '/chat/setNickname/',
+			data: {
+				chatroomId: 		chatroomId,
+				encryptedNickname: 	encryptedNickname
+			}
+		})
+		.done(function(data) {
+			nicknameId = data;
+			fn();
+		})
+		.fail(function(status, err){
+			console.log(status + ' ' + err);
+		});
+	} catch (e) {console.log(e);}
 
+	return false;
 }
 
 function messageToHTML(nickname, text){
@@ -222,9 +253,9 @@ function invite(){
 		}
 	})
 	.done(function(inviteId) {
-		var inviteURL = 'https://ephemeral.pw/invite/' + inviteId;
+		var inviteURL = 'http://localhost:11994/invite/' + inviteId;
 		$('#inviteBtn').html('Regenerate Invite URL');
-		$('#inviteWell').html('Join the chat at: ' + inviteURL + '<br><br>The password is: ' + password);
+		$('#inviteWell').html('Join the chat at: ' + inviteURL);
 		$('#inviteWell').show();
 	})
 	.fail(function(status, err){
@@ -232,8 +263,12 @@ function invite(){
 	});
 }
 
-function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-};
+function initiateKeyExchange(){
+	var msg = {
+			msgType: 		"keyExchangeReq",
+			chatroomId: 	chatroomId,
+			publicKeyPem: 	forge.pki.publicKeyToPem(keypair.publicKey)
+		};
+
+	socket.send(JSON.stringify(msg));
+}

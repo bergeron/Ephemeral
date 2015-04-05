@@ -1,3 +1,5 @@
+/* main.go */
+
 package main
 import (
 	"net/http"
@@ -18,7 +20,6 @@ import (
 	"time"
 	"strconv"
 	"database/sql"
-	"encoding/json"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/gorilla/websocket"
 )
@@ -43,12 +44,18 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	/* SSL/TLS */
-	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
-	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-	err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+	// path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
+	// path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
+	// err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	err := http.ListenAndServe(":11994", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 func connectDb() (*sql.DB){
@@ -362,212 +369,6 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "viewClient", data)
 }
 
-/* GET /chat */
-func chatHandler(w http.ResponseWriter, r *http.Request) {
-
-	queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
-	params := strings.Split(queryString, "/")
-
-	if len(params) == 2 {
-		viewChatHandler(w,r)
-	} else {
-
-		type Out struct {
-			Creating bool
-		}
-		tmpl := template.Must(template.ParseFiles("static/html/chatCreate.html", "static/html/top.html", "static/html/head.html", 
-												"static/html/chat.html", "static/html/chatPrompt.html"))
-		tmpl.ExecuteTemplate(w, "chatCreate", Out{true})
-	}
-}
-
-/* POST /chat/create */
-func createChatHandler(w http.ResponseWriter, r *http.Request) {
-
-	chatroomId := generateTableId(db, "chatrooms")
-	chatMsgId := generateTableId(db, "messages")
-	nicknameId := generateTableId(db, "nicknames")
-	encryptedNickname := r.FormValue("encryptedNickname")
-	salt := r.FormValue("salt")
-
-	/* New hub to broadcast messages to chatroom */
-	var h = hub{
-		chatroomId:	 chatroomId,
-		broadcast:   make(chan []byte),
-		register:    make(chan *connection),
-		unregister:  make(chan *connection),
-		connections: make(map[*connection]bool),
-	}
-
-	go h.run()
-
-	chatIdToHub[chatroomId] = &h
-
-	/* Insert chat, nickname into db */
-	_, err := db.Exec("insert into chatrooms values (?, ?, UTC_TIMESTAMP())", chatroomId, salt)
-	_, err = db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	type Resp struct {
-		ChatroomId 	string
-		NicknameId 	string
-		OldestId 	string
-	}
-
-	json, err := json.Marshal(Resp{chatroomId, nicknameId, chatMsgId})
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		fmt.Println(err.Error())
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(json)
-}
-
-/* GET /chat/chatroomId */
-func viewChatHandler(w http.ResponseWriter, r *http.Request) {
-
-	/* get query params */
-	queryString := strings.TrimSuffix(r.URL.Path[len("/chat/"):],"/")
-	params := strings.Split(queryString, "/")
-	if len(params) != 1 {
-		writeError(w, "Chatroom not found. It may have been deleted.")
-		return
-	}
-
-	chatroomId := params[0]
-
-	var salt string
-	err := db.QueryRow("SELECT salt FROM chatrooms WHERE id = ?", chatroomId).Scan(&salt)
-	if err != nil{
-		fmt.Println(err.Error())
-		writeError(w, "Chatroom not found. It may have been deleted!")
-		return
-	}
-
-	rows, err := db.Query("SELECT encrypted_nickname FROM nicknames WHERE chatroom_id=?", chatroomId)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	nicknames := []string{}
-
-	defer rows.Close()
-    for rows.Next() {
-		var encrypted_nickname string
-		err = rows.Scan(&encrypted_nickname)
-		nicknames = append(nicknames, encrypted_nickname)
-	}
-	err = rows.Err()
-
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	type Out struct {
-		Salt string
-		EncryptedNicknames []string
-		Creating bool
-	}
-
-	tmpl := template.Must(template.ParseFiles("static/html/chatView.html", "static/html/top.html", "static/html/head.html", "static/html/chat.html", "static/html/chatPrompt.html"))
-	tmpl.ExecuteTemplate(w, "chatView", Out{salt, nicknames, false})
-}
-
-/* POST /chat/setNickname */
-func setNicknameHandler(w http.ResponseWriter, r *http.Request) {
-
-	nicknameId := generateTableId(db, "nicknames")
-	chatroomId := r.FormValue("chatroomId")
-	encryptedNickname := r.FormValue("encryptedNickname")
-
-	_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	data := map[string]string{
-	    "nicknameId": nicknameId,
-	    "encryptedText": encryptedNickname,
-	}
-
-	hub := chatIdToHub[chatroomId]
-	hub.broadcast <- parseMessage("newMember", data)
-	w.Write([]byte(nicknameId))
-}
-
-/* /chat/invite/ */
-func inviteHandler(w http.ResponseWriter, r *http.Request) {
-
-	queryString := strings.TrimSuffix(r.URL.Path[len("/"):],"/")
-	params := strings.Split(queryString, "/")
-
-	if len(params) == 2 {
-		inviteViewHandler(w,r)
-	} else {
-		inviteCreateHandler(w,r)
-	}
-}
-
-/* GET /invite/inviteId */
-func inviteViewHandler(w http.ResponseWriter, r *http.Request) {
-
-	/* Blacklist sites that GET the url before sending to recipient */
-	blacklist := [...]string{"facebook"}
-	
-	for _,e := range blacklist {
-		if strings.Contains(r.UserAgent(), e) {
-			fmt.Fprintf(w, "Go away %s! This is only for the recipient!", e)
-			return
-		}
-	}
-
-	/* get query params */
-	queryString := strings.TrimSuffix(r.URL.Path[len("/invite/"):],"/")
-	params := strings.Split(queryString, "/")
-	if len(params) != 1 {
-		writeError(w, "Invite not found. It may have been deleted.")
-		return
-	}
-
-	inviteId := params[0]
-
-	var chatroomId string
-	err := db.QueryRow("SELECT chatroom_id FROM invites WHERE id=?", inviteId).Scan(&chatroomId)
-	if err != nil {
-		writeError(w, "Invite not found. It may have already been used.")
-		return
-	}
-
-	/* Delete invite from db */
-	_, err = db.Exec("DELETE FROM invites WHERE id = ?", inviteId)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	url := "https://" + r.Host + "/chat/" + chatroomId
-	http.Redirect(w, r, url, 303)		
-}
-
-/* POST /invite */
-func inviteCreateHandler(w http.ResponseWriter, r *http.Request) {
-
-	inviteId := generateTableId(db, "invites")
-	chatroomId := r.FormValue("chatroomId")
-
-	_, err := db.Exec("insert into invites values (?, ?, UTC_TIMESTAMP())", inviteId, chatroomId)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	w.Write([]byte(inviteId))
-}
-
 /* Generate unique 128 random bits */
 func generateTableId(db *sql.DB, tablename string) string {
 
@@ -592,24 +393,5 @@ func generateTableId(db *sql.DB, tablename string) string {
 		return id
 	} else {
 		return generateTableId(db, tablename)
-	}
-}
-
-func deleteChatroom(chatroomId string){
-	delete(chatIdToHub, chatroomId)
-
-	_, err := db.Exec("DELETE FROM chatrooms WHERE id = ?", chatroomId)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	_, err = db.Exec("DELETE FROM nicknames WHERE chatroom_id = ?", chatroomId)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	_, err = db.Exec("DELETE FROM invites WHERE chatroom_id = ?", chatroomId)
-	if err != nil {
-		fmt.Println(err.Error())
 	}
 }

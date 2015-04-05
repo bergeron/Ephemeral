@@ -1,7 +1,9 @@
 
-function choosePwd(){
-	$('#encryptBox').show();
-}
+$(document).ready(function(){
+	$('#encryptInBrowser').click(function(){
+		$('#encryptBox').show();
+	});
+});
 
 function encrypt(message, passwordSource){
 
@@ -39,4 +41,27 @@ function encrypt(message, passwordSource){
 	} catch (e) {console.log(e)}
 	
 	return false;
+}
+
+
+function decrypt(password){
+
+	try {
+		var key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
+		var decrypted = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8).split("\n").join("<br>");
+
+		$('#decryptedMessage').html('');
+		var lines = decrypted.split('<br>');
+		for(var i=0; i < lines.length; i++){
+			$('#decryptedMessage').append(escapeHtml(lines[i]) + '<br>');
+		}
+	} catch (e) {console.log(e)}	/* Error when incorrect key doesn't generate UTF8 */
+
+	return false;
+}
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
 }

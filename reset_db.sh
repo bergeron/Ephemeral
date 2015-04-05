@@ -3,7 +3,7 @@
 # Drops and recreates tables according to schema.
 
 messages_schema="(id VARBINARY(32) NOT NULL,encrypted_text VARBINARY(43688) NOT NULL,salt VARCHAR(255),dt_created_epoch BIGINT NOT NULL,expire_minutes INT,server_encrypted BOOLEAN NOT NULL)"
-chatrooms_schema="(id VARBINARY(32) NOT NULL,salt VARCHAR(255) NOT NULL,dt_created DATETIME NOT NULL)"
+chatrooms_schema="(id VARBINARY(32) NOT NULL,dt_created DATETIME NOT NULL)"
 nicknames_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,encrypted_nickname VARCHAR(255) NOT NULL,dt_created DATETIME NOT NULL)"
 invites_schema="(id VARBINARY(32) NOT NULL,chatroom_id VARBINARY(32) NOT NULL,dt_created DATETIME NOT NULL)"
 

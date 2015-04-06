@@ -19,7 +19,9 @@
 
         <br>
         <form action="/create/server/" method="post">
-            <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></textarea>
+            <div style="overflow:hidden">
+                <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></textarea>
+            </div>
             <br>
 
             <div id="expiration">
@@ -27,9 +29,8 @@
                 <input id="expireMinutes" type="number" name="expireMinutes" placeholder="None">
             </div>
             <br><br>
-            <div class="center" style="display: table">
-                <button class="submitBtn" type="submit">Encrypt on Server</button>
-                &nbsp;
+            <div id="btnsWrapper" class="center">
+                <button id="encryptOnServer" class="submitBtn" type="submit">Encrypt on Server</button>
                 <button id="encryptInBrowser" class="submitBtn" type="button"> Encrypt in Browser </button>
             </div>
 
@@ -55,7 +56,7 @@
             
             <div id="result" class="center">
                 Give recipient this message:<br>
-                <div id="finishedMessage" class="well700">
+                <div id="finishedMessage" class="well">
                 </div>
             </div>
 

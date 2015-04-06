@@ -25,15 +25,16 @@
                     {{.Message}}
                 </div>
 
+                <br><br>
 
-                <form style="height:100px" onsubmit="return decrypt(password.value);">
+                <form onsubmit="return decrypt(password.value);">
                     <div>
-                        <input type="text" name="password" style="font-size: 25px"> &nbsp;
+                        <input id="decryptInput" type="text" name="password">
                         <button class="submitBtn" >Decrypt</button>
                     </div>
                 </form>
 
-                <br>
+                <br><br><br><br>
                 <h1>This message has been deleted and cannot be viewed again.</h1>
             {{else}}
                 <h1>Message not found.  It may have been deleted.</h1>

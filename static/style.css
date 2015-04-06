@@ -11,7 +11,6 @@ html{
     margin-right: auto;
 }
 
-
 body{
      margin:0;
      padding:0;
@@ -35,8 +34,8 @@ a:hover{
     text-decoration: none;
 }
 
-
 #title{
+    margin-right: -200px;
     padding-top: 8px;
     padding-left: 11px;
     float: left;
@@ -98,31 +97,7 @@ a:hover{
     padding-right: 20%;
 }
 
-@media (max-width: 910px) {
-    .alignRelaxed{
-        padding-left: 5%;
-    }
-   #corner{
-          width: 200px;
-          height: 200px;
-          font-size: 26px;
-          line-height: 36px;
-      }
-}
-
-@media (max-width: 1200px) {
-    .alignAggressive{
-        padding-left: 7%;
-    }
-}
-
-@media (max-width: 1000px) {
-    .alignAggressive{
-        padding-left: 1%;
-    }
-}
-
-.well700 {
+.well {
     font-size: 15px;
     font-family: monospace;
     word-wrap: break-word;
@@ -131,21 +106,6 @@ a:hover{
     min-height: 20px;
     padding: 19px;
     margin-top: 10px;
-    background-color: black;
-    border: 4px solid #36D7B7;
-    -moz-border-radius: 15px;
-    border-radius: 15px;
-}
-
-.well {
-    font-size: 15px;
-    font-family: monospace;
-    word-break: break-word;
-    color: white;
-    width: 60%;
-    min-height: 20px;
-    padding: 19px;
-    margin-bottom: 20px;
     background-color: black;
     border: 4px solid #36D7B7;
     -moz-border-radius: 15px;
@@ -189,6 +149,30 @@ textarea{
     width: 130px;
 }
 
+#btnsWrapper{
+    max-width: 545px;
+    height:80px;
+}
+
+#encryptOnServer{
+    width: 255px;
+    padding-left: 0px;
+    padding-right: 0px;
+    position: relative;
+    float: left;
+    z-index: 2;
+    margin-right: -200px;
+}
+
+#encryptInBrowser{
+    width: 255px;
+    padding-left: 0px;
+    padding-right: 0px;
+    position: relative;
+    float: right;
+    z-index: 1;
+}
+
 #encryptBox{
     padding: 20px;
     max-width: 625px;
@@ -211,6 +195,12 @@ textarea{
     display: none;
 }
 
+#decryptInput{
+    font-size: 25px;
+    width:50%;
+    margin-right:20px;
+}
+
 #about{
     padding: 15px;
     background-color: white;
@@ -224,16 +214,25 @@ textarea{
     border-width: 1px;
 }
 
-@media (max-device-width: 500px) {
-    #about{
-        font-size: 14px;
-    }
-}
-
 #chatRoom{
     display: none;
     overflow: hidden;
     max-width: 750px;
+    padding: 15px;
+    background-color: black;
+    border-radius: 20px;
+    -moz-border-radius: 20px;
+    -webkit-border-radius: 20px;
+}
+
+
+#chatRoomWindow{
+    border-radius: 20px;
+    -moz-border-radius: 20px;
+    -webkit-border-radius: 20px;
+    overflow-y: auto;
+    background-color: white;
+    height: 400px;
     padding: 10px;
 }
 
@@ -244,7 +243,7 @@ textarea{
 }
 
 .msgText{
-
+    width:700px;
 }
 
 .nickname{
@@ -263,13 +262,6 @@ textarea{
 }
 
 #messages{
-}
-
-#chatRoomWindow{
-    overflow-y: auto;
-    background-color: white;
-    height: 400px;
-    padding: 10px;
 }
 
 #membersUl{
@@ -300,10 +292,49 @@ textarea{
 }
 
 #messageText{
-    width: 75%;
-    height: 30px;
-    font-size: 20px;
-    margin-top: 2px
+    display:block;
+    float: left;
+    width: 624px;
+    height: 40px;
+    font-size: 18px;
+    padding-left: 10px;
+    color: white;
+    background-color: black;
+    border-color: #36D7B7;
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 10px 0 0 10px;
+    -moz-border-radius: 10px 0 0 10px;
+    -webkit-border-radius: 10px 0 0 10px;
+    outline: none;
+}
+
+#chatSendBtn{
+    display:block;
+    float: left;
+    height: 46px;
+    width: 14%;
+    color: white;
+    background: black;
+    font-size:23px;
+    border-radius: 0 10px 10px 0;
+    border-width: 3px;
+    border-style: solid;
+    border-color: #36D7B7;
+    cursor: pointer;
+    outline: none;
+}
+
+
+#chatSendBtn:hover {
+    color: black;
+    background: #36D7B7;
+}
+
+@media (max-width: 800px){
+    #messageText{
+          width: 80%;
+    }
 }
 
 #inviteWell{

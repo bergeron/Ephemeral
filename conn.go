@@ -152,6 +152,10 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 
 	chatroomId := r.FormValue("chatroomId")
 
+	var upgrader = websocket.Upgrader{
+	   CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

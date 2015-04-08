@@ -87,7 +87,7 @@ function decryptNicknames(){
 
 function openWebSocket(chatroomId){
 
-	socket = new WebSocket('ws://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
+	socket = new WebSocket('wss://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
     socket.onopen = function(event){
     	if(creating){
 			setNickname(nickname);

@@ -1,26 +1,24 @@
-// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/* conn.go */
 
 package main
 
 import (
 	"github.com/gorilla/websocket"
-	"log"
-	"net/http"
 	"time"
 	"encoding/json"
 	"fmt"
 )
 
-// connection is an middleman between the websocket connection and the hub.
-// There is 1 socket connection for each chat member. Each connection
-// is associated with 1 hub. When the user writes a message to the socket
-// connection, the message is passed to the hub for broadcast.
-// When the connection receives a message from the hub, it is written to the user.
+/* connection is an middleman between the websocket connection and the hub.
+	There is 1 socket connection for each chat member. Each connection
+	is associated with 1 hub. When the user writes a message to the socket
+	connection, the message is passed to the hub for broadcast.
+	When the connection receives a message from the hub, it is written to the user. */
 type connection struct {
 
 	chatroomId string
+
+	nicknameId string
 
 	hub *hub
 
@@ -45,47 +43,7 @@ const (
 	maxMessageSize = 4096
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
-}
-
-/* Converts to JSON */
-func parseMessage(data map[string]string) []byte {
-
-	/* Convert nicknameId to encryptedNickname */
-	if data["msgType"] == "newMessage"{
-
-		nicknameId := data["nicknameId"]
-		var encryptedNickname string
-		err := db.QueryRow("SELECT encrypted_nickname FROM nicknames WHERE id= ?", nicknameId).Scan(&encryptedNickname)
-		if err != nil {
-			fmt.Println("No nickname found with id: " + nicknameId)
-			encryptedNickname = "Unknown"
-		}
-		delete(data, "nicknameId")
-		data["encryptedNickname"] = encryptedNickname
-
-	} else if data["msgType"] == "newMember"{
-		//
-	} else if data["msgType"] == "keyExchangeReq"{
-		//
-	} else if data["msgType"] == "keyExchangeResp"{
-		//
-	} else {
-		fmt.Println("Unknown Message Type")
-	}
-
-	json, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println(err.Error())
-		json = []byte("Error")
-	}
-
-	return json
-}
-
-// readPump pumps messages from the websocket connection to the hub. (User sending msg)
+/* Pumps messages from the websocket connection to the hub. (User sending msg) */
 func (c *connection) readPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -101,24 +59,22 @@ func (c *connection) readPump() {
 		}
 
 		var data map[string]string
-
 		err = json.Unmarshal(bytes, &data);
 		if err != nil{
 			fmt.Println(err.Error())
 			break
 		}
 
-		c.hub.broadcast <- parseMessage(data)
+		c.hub.broadcast <- hubPreProcessor(c, data)
 	}
 }
 
-// write writes a message with the given message type and payload.
 func (c *connection) write(mt int, payload []byte) error {
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.ws.WriteMessage(mt, payload)
 }
 
-// writePump pumps messages from the hub to the websocket connection. (User receiving msg)
+/* Pumps messages from the hub to the websocket connection. (User receiving msg) */
 func (c *connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -141,30 +97,4 @@ func (c *connection) writePump() {
 			}
 		}
 	}
-}
-
-// initiates websocket requests from the peer.
-func serveWs(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", 405)
-		return
-	}
-
-	chatroomId := r.FormValue("chatroomId")
-
-	var upgrader = websocket.Upgrader{
-	   CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	h := chatIdToHub[chatroomId]
-	c := &connection{chatroomId: chatroomId, hub: h, send: make(chan []byte, 256), ws: ws}
-	c.hub.register <- c
-	go c.writePump()
-	c.readPump()
 }

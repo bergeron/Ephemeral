@@ -8,8 +8,43 @@ import (
 	"strings"
 	"html/template"
 	"encoding/json"
-	_ "github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 )
+
+var chatIdToHub map[string]*hub = make(map[string]*hub)
+
+/* Websocket to /chat/ws */
+func serveWs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	chatroomId := r.FormValue("chatroomId")
+
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,	
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	h := chatIdToHub[chatroomId]
+	if h == nil{
+		fmt.Println("Couldn't find hub.")
+	}
+
+	c := &connection{chatroomId: chatroomId, nicknameId: "sadf", hub: h, send: make(chan []byte, 256), ws: ws}
+	c.hub.register <- c
+	go c.writePump()
+	c.readPump()
+}
+
 
 /* GET /chat */
 func chatHandler(w http.ResponseWriter, r *http.Request) {
@@ -119,26 +154,29 @@ func viewChatHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "chat", Out{nicknames, false, chatroomId})
 }
 
-/* POST /chat/setNickname */
-func setNicknameHandler(w http.ResponseWriter, r *http.Request) {
+func setNickname(c *connection, encryptedNickname string, chatroomId string) {
 
 	nicknameId := generateTableId(db, "nicknames")
-	chatroomId := r.FormValue("chatroomId")
-	encryptedNickname := r.FormValue("encryptedNickname")
 
 	_, err := db.Exec("insert into nicknames values (?, ?, ?, UTC_TIMESTAMP())", nicknameId, chatroomId, encryptedNickname)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	data := map[string]string{
-		"msgType":				"newMember"	,
-	    "encryptedNickname": 	encryptedNickname,
+	data := make(map[string]string)
+	data["msgType"] = "nicknameId"
+	data["nicknameId"] = nicknameId
+
+	json, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println(err.Error())
+		json = []byte("Error")
 	}
 
-	hub := chatIdToHub[chatroomId]
-	hub.broadcast <- parseMessage(data)
-	w.Write([]byte(nicknameId))
+	err = c.write(websocket.TextMessage, json)
+	if err != nil{
+		return
+	}
 }
 
 /* /chat/invite/ */
@@ -226,4 +264,38 @@ func deleteChatroom(chatroomId string){
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+}
+
+func hubPreProcessor(c *connection, data map[string]string) []byte {
+
+	/* Convert nicknameId to encryptedNickname */
+	if data["msgType"] == "newMessage"{
+
+		nicknameId := data["nicknameId"]
+		var encryptedNickname string
+		err := db.QueryRow("SELECT encrypted_nickname FROM nicknames WHERE id= ?", nicknameId).Scan(&encryptedNickname)
+		if err != nil {
+			fmt.Println("No nickname found with id: " + nicknameId)
+			encryptedNickname = "Unknown"
+		}
+		delete(data, "nicknameId")
+		data["encryptedNickname"] = encryptedNickname
+
+	} else if data["msgType"] == "newMember"{
+		setNickname(c, data["encryptedNickname"], data["chatroomId"])
+	} else if data["msgType"] == "keyExchangeReq"{
+		//
+	} else if data["msgType"] == "keyExchangeResp"{
+		//
+	} else {
+		fmt.Println("Unknown Message Type")
+	}
+
+	json, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println(err.Error())
+		json = []byte("Error")
+	}
+
+	return json
 }

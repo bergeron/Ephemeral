@@ -1,20 +1,37 @@
+/* message.js */
 
 $(document).ready(function(){
-	$('#encryptInBrowser').click(function(){
-		$('#encryptBox').show();
+
+	$('#expireCheckbox').click(function(e){
+		toggleCheckbox($('#expireCheckbox'), $('#expireMinutes'));
+	});
+
+	$('#passwordCheckbox').click(function(e){
+		toggleCheckbox($('#passwordCheckbox'), $('#customPassword'))
 	});
 });
 
-function encrypt(message, passwordSource){
+function toggleCheckbox(checkBox, input){
+	if(checkBox.prop('checked')){
+		input.prop('disabled', false);
+	} else {
+		input.prop('disabled', true);
+		input.val('');
+	}
+}
+
+function create(message){
+
+	if($('#passwordCheckbox').prop('checked')){
+		return encrypt(message, $('#customPassword').val());
+	} else {
+		return true;
+	}
+}
+
+function encrypt(message, password){
 
 	try{
-		var password;
-		if(passwordSource == 'custom'){
-			password = $('#customPassword').val();
-		} else {
-			password = CryptoJS.lib.WordArray.random(128/8).toString();
-		}
-
 		var salt = CryptoJS.lib.WordArray.random(128/8).toString();
 		var key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
 		var encryptedText = CryptoJS.AES.encrypt(message, key).toString();
@@ -30,7 +47,7 @@ function encrypt(message, passwordSource){
 			}
 		})
 		.done(function(data) {
-			var resultMsg = 'I have a message for you at: ' + data + '<br><br>' + 'The password is: ' + password;
+			var resultMsg = data;
 			$('#finishedMessage').html(resultMsg);
 			$('#result').show();
 		})

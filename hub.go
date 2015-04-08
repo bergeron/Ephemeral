@@ -1,13 +1,11 @@
-// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+/* hub.go */
 
 package main
 
-// There is 1 hub per chatroom.
-// Each hub maintains the set of active socket connections (users)
-// and broadcasts messages to all members of the chatroom.
-// Detects when client closes socket.
+/*	There is 1 hub per chatroom. Each hub:
+	-Detects when client opens/closes socket.
+	-Maintains the set of active socket connections (users)
+	-Broadcasts messages to all members of the chatroom.	*/
 type hub struct {
 
 	chatroomId string
@@ -25,6 +23,7 @@ type hub struct {
 	unregister chan *connection
 }
 
+/* */
 func (h *hub) run() {
 	for {
 		select {

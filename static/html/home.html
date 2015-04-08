@@ -12,54 +12,48 @@
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignRelaxed">
-            <h1>1. Encrypt a message</h1><br>
+            <h1>1. Write a message</h1><br>
             <h1>2. Send URL to recipient</h1><br>
             <h1>3. Message destroyed when read</h1><br>
         </div>
 
         <br>
-        <form action="/create/server/" method="post">
+        <form action="/create/server/" method="post" onsubmit="return create(msgText.value);">
             <div style="overflow:hidden">
                 <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></textarea>
             </div>
             <br>
 
-            <div id="expiration">
-                Set expiration (minutes):
-                <input id="expireMinutes" type="number" name="expireMinutes" placeholder="None">
+            <div id="expiration" class="center">
+
+                <div class="option">
+                    <input id="expireCheckbox" type="checkbox">
+                    Set expiration (minutes): &nbsp;
+                    <input id="expireMinutes" name="expireMinutes" type="number" placeholder="None" disabled><br><br>
+                </div>
+                
+                <div class="option">
+                    <input id="passwordCheckbox" type="checkbox">
+                    Password protect:&nbsp;
+                    <input id="customPassword" type="text" placeholder="None" disabled>
+                </div>
             </div>
             <br><br>
             <div id="btnsWrapper" class="center">
-                <button id="encryptOnServer" class="submitBtn" type="submit">Encrypt on Server</button>
-                <button id="encryptInBrowser" class="submitBtn" type="button"> Encrypt in Browser </button>
+                <button  class="submitBtn center" type="submit">Create Message</button>
+
             </div>
 
-            <div id="difference">
-                What's the difference? See <a href="/about"> about </a> 
-            </div>
+            <br><br>
+
         </form>
 
-        <br><Br>
-        
-        <div id="encryptBox" class="center" style="display: none;">
-        <hr><br>
-            <form onsubmit="return encrypt(msgText.value, passwordSource.value);" style="overflow: hidden;">
-                <input type="radio" name="passwordSource" value="rand" onclick="customPassword.value='';customPassword.disabled=true" checked> 
-                    Random 128 bit password<br>
-                <input type="radio" name="passwordSource" value="custom" onclick="customPassword.disabled=false"> 
-                    Custom password: <input id="customPassword" type="text" style="width: 300px;" disabled> <br>
-                <br>
-                <button id="createBtn" class="submitBtn" style="float: right;">Create</button>
-            </form>
-
-            <br><hr><br>
-            
-            <div id="result" class="center">
-                Give recipient this message:<br>
-                <div id="finishedMessage" class="well">
-                </div>
+        <div id="result" class="center">
+            <hr>
+            <br>
+            Give this URL to the recipient:<br>
+            <div id="finishedMessage" class="well center">
             </div>
-
         </div>
 
         <br><br>

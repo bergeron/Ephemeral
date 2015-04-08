@@ -4,6 +4,7 @@ var chatroomId = $(location).attr('pathname').substring(6);
 var keypair = forge.pki.rsa.generateKeyPair({bits: 2048, e: 0x10001});
 var socket;
 var sharedSecret;
+var nickname;
 var nicknameId;
 var nicknames = [];
 var colors = [];
@@ -20,17 +21,12 @@ $(document).ready(function() {
 	}
 
 	$('#nicknameForm').submit(function(e){
+		nickname = $('#nickname').val();
+
 		if(creating){
-			create($('#nickname').val());
+			create();
 		} else {
-			if(sharedSecret == undefined){
-				console.log("Waiting for sharedSecret");
-				return false;
-			} else {
-				setNickname($('#nickname').val(), function(){
-    				sendMsg('has joined the chatroom');
-				});
-			}
+			setNickname(nickname);
 		}
 		openChatroom();
 		return false;
@@ -44,7 +40,7 @@ function escapeHtml(str) {
 }
 
 function openChatroom(){
-	$('#encryptBox').hide();
+	$('#nicknameForm').hide();
 	$('#chatInstructions').hide();
 	$('#openChatBtn').hide();
 
@@ -54,11 +50,10 @@ function openChatroom(){
 	$('#inviteInstructions').show();
 }
 
-function create(nickname){
+function create(){
 	try{
 		
 		sharedSecret = CryptoJS.lib.WordArray.random(128/8).toString();
-		var encryptedNickname = CryptoJS.AES.encrypt(nickname, sharedSecret).toString();
 
 		$.ajax({
 			method: 'POST',
@@ -66,15 +61,11 @@ function create(nickname){
 		})
 		.done(function(data) {
 			chatroomId = data.ChatroomId;
-			setNickname(nickname, function(){
-				addMember(nickname);
-				openWebSocket(chatroomId);
-			});
+			openWebSocket(chatroomId);
 		})
 		.fail(function(status, err){
 			console.log(status + ' ' + err);
 		});
-
 
 	} catch (e) {console.log(e)}
 
@@ -85,7 +76,9 @@ function decryptNicknames(){
 	try{
 
 		for(var i=0; i < encryptedNicknames.length; i++){
-			addMember(CryptoJS.AES.decrypt(encryptedNicknames[i], sharedSecret).toString(CryptoJS.enc.Utf8));
+			var nickname = CryptoJS.AES.decrypt(encryptedNicknames[i], sharedSecret).toString(CryptoJS.enc.Utf8);
+			nickname = escapeHtml(nickname);
+			addMember(nickname);
 		}
 	} catch (e) {console.log(e)}
 
@@ -94,10 +87,10 @@ function decryptNicknames(){
 
 function openWebSocket(chatroomId){
 
-	socket = new WebSocket('wss://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
+	socket = new WebSocket('ws://ephemeral.pw/chat/ws?chatroomId=' + chatroomId);
     socket.onopen = function(event){
     	if(creating){
-    		sendMsg('has joined the chatroom');
+			setNickname(nickname);
     	} else {
     		initiateKeyExchange();
     	}
@@ -123,17 +116,20 @@ function openWebSocket(chatroomId){
     	} else if(data.msgType == "keyExchangeResp" && sharedSecret == undefined && data.publicKeyPem == forge.pki.publicKeyToPem(keypair.publicKey)) {
     		sharedSecret = keypair.privateKey.decrypt(data.sharedSecretEncrypted);
     		decryptNicknames();
-
     	} else if(data.msgType == 'newMessage'){
 			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
 			var text = CryptoJS.AES.decrypt(data.encryptedText, sharedSecret).toString(CryptoJS.enc.Utf8);
 			messageToHTML(nickname, text);
 		} else if(data.msgType == 'newMember'){
 			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
+			nickname = escapeHtml(nickname);
 			addMember(nickname);
 		} else if(data.msgType == 'lostMember'){
 			var nickname = CryptoJS.AES.decrypt(data.encryptedNickname, sharedSecret).toString(CryptoJS.enc.Utf8);
-			//TODO
+			nickname = escapeHtml(nickname);
+			lostMember(nickname);
+		} else if(data.msgType == 'nicknameId'){
+			nicknameId = data.nicknameId;
 		}
     }
     socket.onclose = function(event) {
@@ -168,41 +164,33 @@ function sendMsg(message){
 	return false;
 }
 
-function setNickname(nickname, fn){
+function setNickname(nickname){
 
-	try{
+	if(sharedSecret == undefined){
+		console.log("Waiting for sharedSecret");
+		return;
+	}
 
 	/* Duplicate nickname */
-		var origNickname = nickname;
-		var dupes = 0;
-		for(var i=0; i < nicknames.length; i++){
-			if(nicknames[i] == nickname){
-				nickname = origNickname + '(' + (dupes+1) + ')';
-				dupes ++;
-				i=0;
-			}
+	var origNickname = nickname;
+	var dupes = 0;
+	for(var i=0; i < nicknames.length; i++){
+		if(nicknames[i] == nickname){
+			nickname = origNickname + '(' + (dupes+1) + ')';
+			dupes ++;
+			i=0;
 		}
+	}
 
-		var encryptedNickname = CryptoJS.AES.encrypt(nickname, sharedSecret).toString();
+	var encryptedNickname = CryptoJS.AES.encrypt(nickname, sharedSecret).toString();
 
-		$.ajax({
-			method: 'POST',
-			url: '/chat/setNickname/',
-			data: {
-				chatroomId: 		chatroomId,
-				encryptedNickname: 	encryptedNickname
-			}
-		})
-		.done(function(data) {
-			nicknameId = data;
-			fn();
-		})
-		.fail(function(status, err){
-			console.log(status + ' ' + err);
-		});
-	} catch (e) {console.log(e);}
+	var msg = {
+		msgType: 			"newMember",
+		chatroomId: 		chatroomId,
+		encryptedNickname: 	encryptedNickname
+	};
 
-	return false;
+	socket.send(JSON.stringify(msg));
 }
 
 function messageToHTML(nickname, text){
@@ -225,11 +213,18 @@ function messageToHTML(nickname, text){
 }
 
 function addMember(nickname){
-	nickname = escapeHtml(nickname);
 	nicknames.push(nickname);
 	var color = randDarkColor();
 	colors.push(color);
 	$('#membersUl').append('<li style="color:#' + color + '">' + nickname + '</li>');
+	messageToHTML(nickname, 'has joined the chat');
+}
+
+function lostMember(nickname){
+	nicknames.splice(nicknames.indexOf(nickname), 1);
+	colors.splice(nicknames.indexOf(nickname), 1);
+	//TODO
+	messageToHTML(nickname, 'has left the chat');
 }
 
 function randDarkColor() {

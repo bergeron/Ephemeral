@@ -197,42 +197,42 @@ function escapeHtml(str) {
 
 function messageToHTML(nickname, text){
 
-	var color = randDarkColor();
+    var color = randDarkColor();
 
-	var messageHTML = '' +
-	'<div class="chatMsg">' +
-		'<span class="nickname" style="color: #' + color + ';">' +
-			escapeHtml(nickname) + ": " + 
-		'</span>' +
-		'<span class="msgText">' +
-			escapeHtml(text) +
-		'</span>' +
-	'</div>';
+    var messageHTML = '' +
+    '<div class="chatMsg">' +
+        '<span class="nickname" style="color: #' + color + ';">' +
+            escapeHtml(nickname) + ": " + 
+        '</span>' +
+        '<span class="msgText">' +
+            escapeHtml(text) +
+        '</span>' +
+    '</div>';
     
-	$('#messages').append(messageHTML);
+    $('#messages').append(messageHTML);
 
-	var chatWindow = $('#chatRoomWindow');
-	chatWindow.scrollTop(chatWindow.prop('scrollHeight'));	
+    var chatWindow = $('#chatRoomWindow');
+    chatWindow.scrollTop(chatWindow.prop('scrollHeight'));  
 }
 
 function addMember(nickname){
-	//nicknames.push(nickname);
-	var color = randDarkColor();
-	//colors.push(color);
-	$('#membersUl').append('<li style="color:#' + color + '">' + nickname + '</li>');
-	messageToHTML(nickname, 'has joined the chat');
+    //nicknames.push(nickname);
+    var color = randDarkColor();
+    //colors.push(color);
+    $('#membersUl').append('<li style="color:#' + color + '">' + nickname + '</li>');
+    messageToHTML(nickname, 'has joined the chat');
 }
 
 
 function randDarkColor() {
-	var randDarkHex = function() {
-		var hex = (Math.floor(Math.random() * 175)).toString(16);
-		while(hex.length < 2){
-			hex = '0' + hex;
-		}
-		return hex;
-	}
-	return randDarkHex() + '' + randDarkHex() + '' + randDarkHex();
+    var randDarkHex = function() {
+        var hex = (Math.floor(Math.random() * 175)).toString(16);
+        while(hex.length < 2){
+            hex = '0' + hex;
+        }
+        return hex;
+    }
+    return randDarkHex() + '' + randDarkHex() + '' + randDarkHex();
 }
 
 
@@ -250,4 +250,3 @@ function setEphemeral(key, val){
     ephemeral[key] = val;
     localStorage.setItem('ephemeral', JSON.stringify(ephemeral));
 }
-

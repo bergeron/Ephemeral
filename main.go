@@ -29,17 +29,10 @@ func main() {
 	http.HandleFunc("/about/", aboutHandler)
 	http.HandleFunc("/send/", sendHandler)
     http.HandleFunc("/refresh/", refreshHandler)
-	http.HandleFunc("/chat/", chatHandler)
-	http.HandleFunc("/chat/create/", createChatHandler)
-	http.HandleFunc("/chat/ws", serveWs)
-	http.HandleFunc("/invite/", inviteHandler)
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	/* SSL/TLS */
-	//path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
-	//path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
 	err := http.ListenAndServe(":11994", nil)
     if err != nil {
         log.Fatal(err)
@@ -77,27 +70,15 @@ func connectDb() (*sql.DB){
 	return db
 }
 
-/* Write the given error message as HTML */
-func writeError(w http.ResponseWriter, message string){
-	type Out struct {
-		Message string
-	}
-
-	/* Write HTML */
-	data := Out{message}
-	tmpl := template.Must(template.ParseFiles("static/html/error.html", "static/html/top.html", "static/html/head.html"))
-	tmpl.ExecuteTemplate(w, "error", data)
-}
-
 /* GET / */
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/html/home.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/html/home.html"))
 	tmpl.ExecuteTemplate(w, "home", nil)
 }
 
 /* GET /about */
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/html/about.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/html/about.html"))
 	tmpl.ExecuteTemplate(w, "about", nil)
 }
 
@@ -109,21 +90,19 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
     toPubStr := r.FormValue("toPubStr")
     fromPubStr :=  r.FormValue("fromPubStr")
 
-
     expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
 	if err != nil {
 		expireMinutes = 4320
 	} 
-    
-
-	/* Insert message into db */
+  
  	_, err = db.Exec("insert into messages values (?, ?, ?, ?, ?)", 
                         ct, fromPubStr, toPubStr, time.Now().Unix(), expireMinutes)
 	if err != nil {
 		log.Fatal(err)
+        w.Write([]byte("fail"))
 	}
 
-    w.Write([]byte("ok"))
+    w.Write([]byte("success"))
 }
 
 /* GET /refresh/ */

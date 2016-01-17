@@ -133,7 +133,7 @@ function send(pair, toPubStr, msg){
                 'expireMinutes': 100000
             }
         }).done(function(data){
-            if(data == "ok"){
+            if(data == "success"){
                 messageToHTML(pair.pub.keys[0].users[0].userId.userid, msg);
             } else {
                 messageToHTML('Ephemeral', 'Send failed');

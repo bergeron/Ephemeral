@@ -2,63 +2,115 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        {{template "head" .}}
-        <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
-        <script src="https://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/pbkdf2.js"></script>
-        <script language="javascript" type="text/javascript" src="/static/js/message.js"></script>
+        <meta charset="utf-8" />
+        <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
+        <link rel="icon" type="image/png" href="/static/images/favicon.png">
+        <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/js/openpgp.min.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/js/ephemeral.js"></script>
     </head>
     <body>
 
-        {{template "top" .}}
-
-        <div id="whiteStrip" class="alignRelaxed">
-            <h1>1. Write a message</h1><br>
-            <h1>2. Send URL to recipient</h1><br>
-            <h1>3. Message destroyed when read</h1><br>
+        <div id="chatRoom" class="center">
+            <div id="chatRoomWindow">
+                <div id="menuWrapper">
+                    <!-- <div id="menu">
+                        <span class="tab tab-selected">Friends</span> |
+                        <span class="tab">Settings</span>
+                        <div style="height:5px;"></div>
+                        
+                        <div id="friends">
+                            <div class="friend friend-selected">
+                                <div class="circle"></div>
+                                Ephemeral
+                            </div>
+                            <hr>
+                            <div class="friend">
+                                <div class="circle" style="background-color: blue"></div>
+                                Brian (2)
+                            </div>
+                            <hr>
+                            <div class="friend">
+                                <div class="circle" style="background-color: green"></div>
+                                John
+                            </div>
+                        </div>
+                        <div id="settings" class="tab-not-selected-content">
+                            <br>
+                            
+                        </div>
+                    </div> -->
+                    
+    <div class="tabs">
+    
+   <div class="tab">
+       <input type="radio" id="tab-1" name="tab-group-1" checked>
+       <label for="tab-1">Friends</label>
+       
+       <div id="friends" class="content">
+        <div class="friend friend-selected">
+            <div class="circle"></div>
+            Ephemeral
         </div>
-
-        <br>
-        <form action="/create/server/" method="post" onsubmit="return create(msgText.value);">
-            <div style="overflow:hidden">
-                <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></textarea>
-            </div>
-            <br>
-
-            <div id="expiration" class="center">
-
-                <div class="option">
-                    <input id="expireCheckbox" type="checkbox">
-                    Set expiration (minutes): &nbsp;
-                    <input id="expireMinutes" name="expireMinutes" type="number" placeholder="None" disabled><br><br>
+        <hr>
+        <div class="friend">
+            <div class="circle" style="background-color: blue"></div>
+            Brian (2)
+        </div>
+        <hr>
+        <div class="friend">
+            <div class="circle" style="background-color: green"></div>
+            John
+        </div>
+    </div>
+   </div>
+    
+   <div class="tab">
+       <input type="radio" id="tab-2" name="tab-group-1">
+       <label for="tab-2">Settings</label>
+       
+       <div class="content">
+       <br>
+           <button>Regenerate keys</button>
+                            <div style="height: 5px;"></div>
+                            <input type="checkbox" checked> Auto refresh enabled
+                            <br><br>
+                            <input type="number" >  Self destruct (minutes)
+       </div> 
+   </div>
+    
+    
+</div>
+                    
+                    <div id="refresh">
+                        <button class="btn" >Refresh</button><br>
+                        
+                    </div>
+                    
                 </div>
-                
-                <div class="option">
-                    <input id="passwordCheckbox" type="checkbox">
-                    Password protect:&nbsp;
-                    <input id="customPassword" type="text" placeholder="None" disabled>
+
+                <div id="messages">
+                    
+                    <!-- <div class="chatMsg"><span class="nickname" style="color: #7aa160;">Ephemeral: </span><span class="msgText">Keys set in localstorage</span></div>
+                    
+                    <div class="chatMsg"><span class="nickname" style="color: #7aa160;">Ephemeral: </span><span class="msgText">i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i i</span></div>
+                    
+                    <div class="chatMsg"><span class="nickname" style="color: #7aa160;">Ephemeral: </span><span class="msgText">Keys set in localstorage</span></div>
+                    <div class="chatMsg"><span class="nickname" style="color: #7aa160;">Ephemeral: </span><span class="msgText">Keys set in localstorage</span></div>
+                    
+                    <div class="chatMsg"><span class="nickname" style="color: #7aa160;">Ephemeral: </span><span class="msgText">Keys set in localstorage</span></div>
+                 -->
                 </div>
             </div>
-            <br><br>
-            <div id="btnsWrapper" class="center">
-                <button  class="submitBtn center" type="submit">Create Message</button>
 
-            </div>
-
-            <br><br>
-
-        </form>
-
-        <div id="result" class="center">
-            <hr>
-            <br>
-            Give this URL to the recipient:<br>
-            <div id="finishedMessage" class="well center">
+            <div id="inputForm">
+                <input id="messageText" name="message" type="text">
+                <button id="chatSendBtn" type="submit"> Send </button>
             </div>
         </div>
-
-        <br><br>
-        <br><br>
-        <br><br>
+        
+        
 
     </body>
 </html>

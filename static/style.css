@@ -1,7 +1,8 @@
 html{
+    height: 100%;
     margin:0;
     padding:0;
-    background-color: #efefef;
+    background-color: black;
     font-family:FreeSans,Arimo,"Droid Sans",Helvetica,Arial,sans-serif;
 }
 
@@ -12,12 +13,17 @@ html{
 }
 
 body{
-     margin:0;
-     padding:0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 a {
     color: black
+}
+
+hr{
+    margin: 0px;
 }
 
 a:hover{
@@ -39,7 +45,7 @@ a:hover{
     padding-top: 8px;
     padding-left: 11px;
     float: left;
-    font-size: 60px;
+    font-size: 40px;
 }
 
 #title a:hover{
@@ -52,7 +58,7 @@ a:hover{
     float: right;
     text-align: right;
     padding-top: 3px;
-    font-size: 25px;
+    font-size: 20px;
     line-height: 40px;
     background-image: url('images/corner.png');
 }
@@ -112,7 +118,7 @@ a:hover{
     border-radius: 15px;
 }
 
-.submitBtn {
+.btn {
 	color: white;
 	background: black;
 	font-size: 20px;
@@ -121,9 +127,12 @@ a:hover{
 	outline: none;
 	border: 5px solid #36D7B7;
     cursor: pointer;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
 }
 
-.submitBtn:hover {
+.btn:hover {
 	color: black;
 	background: #36D7B7;
 }
@@ -182,31 +191,43 @@ textarea{
 }
 
 #chatRoom{
-    display: none;
+    position: absolute;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0px;
+    right: 0px;
+    bottom: 15px;
+    top: 15px;
+    width: 95%;
+    max-width: 1000px;
+    border-color: #36D7B7;
     overflow: hidden;
-    max-width: 750px;
-    padding: 15px;
     background-color: black;
-    border-radius: 20px;
-    -moz-border-radius: 20px;
-    -webkit-border-radius: 20px;
+    border-style: solid;
+    border-radius: 15px;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
 }
 
 
 #chatRoomWindow{
-    border-radius: 20px;
-    -moz-border-radius: 20px;
-    -webkit-border-radius: 20px;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    bottom: 100px;
+    border-radius: 15px;
+    -moz-border-radius: 15px;
+    -webkit-border-radius: 15px;
     overflow-y: auto;
     background-color: white;
-    height: 400px;
     padding: 10px;
 }
 
 .chatMsg{
     margin-bottom: 11px;
     word-wrap: break-word;
-    margin-right: 150px;
+    margin-right: 196px;
 }
 
 .msgText{
@@ -242,28 +263,32 @@ textarea{
 }
 
 #messages{
+    font-size: 18px;
 }
 
-#membersUl{
-    overflow: hidden;
-    border-width: 1px;
+
+#menu{
+    width: 165px;
+    padding: 5px;
+    border-width: 2px;
     border-style:solid;
-    padding-left: 23px;
-    padding-top: 3px;
-    padding-bottom: 5px;
     font-weight: bold;
-    margin-top: 5px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
 }
 
-#members {
+#menu {
+
     position: absolute;
-    width:130px;
     font-weight: bold;
 }
 
-#membersWrapper{
+#menuWrapper{
     float:right;
-    margin-right: 138px;
+    height: 100%;
+    padding-left: 5px;
+    border-left: 2px solid #36d7b7;
 }
 
 
@@ -271,18 +296,25 @@ textarea{
     display: none;
 }
 
+#inputForm{
+    width: 100%;
+    position: absolute;
+    bottom: 15px;
+    
+}
+
 #messageText{
-    display:block;
-    float: left;
-    width: 624px;
-    height: 40px;
-    font-size: 18px;
-    padding-left: 10px;
+    height: 50px;
+    width: calc(100% - 164px);
+    font-size: 20px;
+    margin-left: 14px;
+    display: inline;
     color: white;
     background-color: black;
-    border-color: #36D7B7;
+    border-color: white;
     border-style: solid;
-    border-width: 2px;
+    border-width: 3px;
+    padding-left: 10px;
     border-radius: 10px 0 0 10px;
     -moz-border-radius: 10px 0 0 10px;
     -webkit-border-radius: 10px 0 0 10px;
@@ -290,17 +322,17 @@ textarea{
 }
 
 #chatSendBtn{
-    display:block;
-    float: left;
-    height: 46px;
-    width: 14%;
+    height: 58px;
+    margin-left: -7px;
+    width: 120px;
+    display: inline;
     color: white;
     background: black;
     font-size: 20px;
     border-radius: 0 10px 10px 0;
     border-width: 3px;
     border-style: solid;
-    border-color: #36D7B7;
+    border-color: white;
     cursor: pointer;
     outline: none;
 }
@@ -309,12 +341,6 @@ textarea{
 #chatSendBtn:hover {
     color: black;
     background: #36D7B7;
-}
-
-@media (max-width: 800px){
-    #messageText{
-          width: 80%;
-    }
 }
 
 #inviteWell{
@@ -329,12 +355,110 @@ textarea{
     display: none;
 }
 
-@media (max-width: 750px) {
-    #members{
+/* @media (max-width: 400px) {
+    #menu{
         display: none;
     }
 
     .chatMsg{
         margin-right: 0px;
     }
+} */
+
+.circle {
+    display:inline-block;
+	width: 20px;
+	height: 20px;
+	background-color: black;
+	-moz-border-radius: 50px;
+	-webkit-border-radius: 50px;
+	border-radius: 50px;
+}
+
+.friend{
+    padding: 5px;  
+}
+
+.friend:hover {
+    background-color: #E8E8E8;
+    cursor: pointer;
+}
+
+.friend-selected{
+    background-color: #E8E8E8;
+}
+
+.tab:hover{
+/*     color: #36D7B7;
+    cursor: pointer;
+    text-decoration: underline; */
+}
+
+.tab-selected{
+    text-decoration: underline;
+}
+
+.tab-selected-content{
+    display: block;
+}
+
+.tab-not-selected-content{
+    display: none;
+}
+
+#refresh{
+    position: absolute;
+    bottom: 7px;
+    margin-left:: 20px;
+    font-size: 15px;
+}
+
+#settings{
+    font-size: 14px;
+    font-weight: normal;
+}
+
+
+.tabs {
+  position: relative;   
+  min-height: 200px; /* This part sucks */
+  clear: both;
+  margin: 25px 0;
+  
+}
+.tab {
+  float: left;
+
+
+}
+.tab label {
+  background: #eee; 
+  padding: 10px; 
+  border: 1px solid #ccc; 
+  margin-left: -1px; 
+  position: relative;
+  left: 1px;
+  cursor: pointer;
+
+}
+.tab [type=radio] {
+  display: none;   
+  
+}
+.content {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  background: white;
+  right: 0;
+  bottom: 0;
+
+}
+[type=radio]:checked ~ label {
+  background: white;
+  border-bottom: 1px solid white;
+  z-index: 2;
+}
+[type=radio]:checked ~ label ~ .content {
+  z-index: 1;
 }

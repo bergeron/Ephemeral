@@ -59,6 +59,11 @@ a:hover{
     padding:0;
 }
 
+#msgText{
+	font-size: 20px;
+    height: 222px;  /* So Chrome mobile wont resize the box when typing */
+}
+
 .align{
     padding-left: 20%;
     padding-right: 20%;
@@ -98,11 +103,6 @@ a:hover{
 .submitBtn:hover {
     color: black;
     background: #36D7B7;
-}
-
-textarea{
-    font-size: 20px;
-    height: 222px;  /* So Chrome mobile wont resize the box when typing */
 }
 
 #expiration{

@@ -46,29 +46,7 @@ a:hover{
     color: #36D7B7;
 }
 
-#corner{
-    width: 170px;
-    height: 238px;
-    float: right;
-    text-align: right;
-    padding-top: 3px;
-    font-size: 25px;
-    line-height: 40px;
-    background-image: url('corner.png');
-}
-
-#corner a{
-    padding-right: 16px;
-    color: #36D7B7;
-    text-decoration: none;
-}
-
-#corner a:hover{
-    text-decoration: underline;
-}
-
 #whiteStrip{
-    min-height: 150px;
     padding-top: 15px;
     padding-bottom: 15px;
     background-color: white;
@@ -76,12 +54,6 @@ a:hover{
 
 #whiteStrip h1{
     font-size: 25px;
-    font-weight: normal;
-    margin:0;
-    padding:0;
-}
-
-#whiteStrip h2{
     font-weight: normal;
     margin:0;
     padding:0;
@@ -127,7 +99,6 @@ a:hover{
     color: black;
     background: #36D7B7;
 }
-
 
 textarea{
     font-size: 20px;

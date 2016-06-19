@@ -19,17 +19,13 @@
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignRelaxed">
-            {{if .Success}}
-                <h1>The Message:</h1>
-                <br>
-                <div id="viewServerMsgWell" class="well">
-                </div>
+			<br>
+			<div id="viewServerMsgWell" class="well">
+			</div>
 
-                <br><br>
-                <h1>This message has been deleted and cannot be viewed again.</h1>
-            {{else}}
-                <h1>Message not found.  It may have been deleted.</h1>
-            {{end}}
+			<br><br>
+			<h1>This message has been deleted and cannot be viewed again.</h1>
+			<br>
         </div>
 
     </body>

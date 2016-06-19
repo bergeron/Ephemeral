@@ -17,28 +17,25 @@
         {{template "top" .}}
 
         <div id="whiteStrip" class="alignRelaxed">
-            {{if .Success}}
-                <h1>The Message:</h1>
+			<h1>The Message:</h1>
 
-                <br>
-                <div id="decryptedMessage" class="well">
-                    {{.Message}}
-                </div>
+			<br>
+			<div id="decryptedMessage" class="well">
+				{{.Message}}
+			</div>
 
-                <br><br>
+			<br><br>
 
-                <form onsubmit="return decrypt(password.value);">
-                    <div>
-                        <input id="decryptInput" type="text" name="password">
-                        <button class="submitBtn" >Decrypt</button>
-                    </div>
-                </form>
+			<form onsubmit="return decrypt(password.value);">
+				<div>
+					<input id="decryptInput" type="text" name="password">
+					<button class="submitBtn" >Decrypt</button>
+				</div>
+			</form>
 
-                <br><br><br><br>
-                <h1>This message has been deleted and cannot be viewed again.</h1>
-            {{else}}
-                <h1>Message not found.  It may have been deleted.</h1>
-            {{end}}
+			<br><br><br><br>
+			<h1>This message has been deleted and cannot be viewed again.</h1>
+			<br>
         </div>
 
     </body>

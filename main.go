@@ -262,10 +262,9 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
 
     /* Write HTML */
     type Out struct {
-        Success bool
         Message []string
     }
-    data := Out{true, strings.Split(message, "\n")}
+    data := Out{strings.Split(message, "\n")}
     tmpl := template.Must(template.ParseFiles("static/viewServer.html", "static/top.html", "static/head.html"))
     tmpl.ExecuteTemplate(w, "viewServer", data)
 }
@@ -315,11 +314,10 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
 
     /* Write HTML */
     type Out struct {
-        Success bool
         Message string
         Salt string
     }
-    data := Out{true, encryptedText, salt}
+    data := Out{encryptedText, salt}
     tmpl := template.Must(template.ParseFiles("static/viewClient.html", "static/top.html", "static/head.html"))
     tmpl.ExecuteTemplate(w, "viewClient", data)
 }

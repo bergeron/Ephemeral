@@ -34,16 +34,16 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	err := http.ListenAndServe(":11995", nil)
+	err := http.ListenAndServe(":11994", nil)
     if err != nil {
         log.Fatal(err)
     }
 }
 
 func connectDb() (*sql.DB){
-	tablename := "ephemeral"
-	username := os.Getenv("ephemeral-username")
-	password := os.Getenv("ephemeral-password")
+	tablename := "Ephemeral"
+	username := os.Getenv("ephemeralUsername")
+	password := os.Getenv("ephemeralPassword")
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {

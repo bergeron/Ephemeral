@@ -54,7 +54,7 @@ a:hover{
     padding-top: 3px;
     font-size: 25px;
     line-height: 40px;
-    background-image: url('images/corner.png');
+    background-image: url('corner.png');
 }
 
 #corner a{

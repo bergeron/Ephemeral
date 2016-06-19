@@ -3,6 +3,14 @@
 <html>
     <head>
         {{template "head" .}}
+		
+		<script>
+            $(document).ready(function(){
+				$('#link').on('click', function () {
+					$(this).select();
+				});
+			});
+		</script>
     </head>
     <body>
         {{template "top" .}}
@@ -10,7 +18,7 @@
         <div id="whiteStrip" class="align">
             <h1>Give this URL to the recipient:</h1>
             <br><br>
-            <textarea class="well" rows="4" cols="100">
+            <textarea id="link" class="well" rows="4" cols="100">
 			https://{{.Host}}/view/server/{{.SecretString}}/{{.KeyString}}
 			</textarea>
 

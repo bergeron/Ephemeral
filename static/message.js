@@ -66,13 +66,15 @@ function decrypt(password){
 	try {
 		var key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
 		var decrypted = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8).split("\n").join("<br>");
-
-		$('#decryptedMessage').html('');
-		var lines = decrypted.split('<br>');
-		for(var i=0; i < lines.length; i++){
-			$('#decryptedMessage').append(escapeHtml(lines[i]) + '<br>');
+		
+		if(decrypted){
+			$('#decryptedMessage').html('');
+			var lines = decrypted.split('<br>');
+			for(var i=0; i < lines.length; i++){
+				$('#decryptedMessage').append(escapeHtml(lines[i]) + '<br>');
+			}
 		}
-	} catch (e) {console.log(e)}	/* Error when incorrect key doesn't generate UTF8 */
+	} catch (e) {}	/* Error when incorrect key doesn't generate UTF8 */
 
 	return false;
 }

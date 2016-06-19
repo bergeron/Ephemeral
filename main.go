@@ -14,70 +14,47 @@ import (
 	"encoding/hex"
 	"strings"
 	"html/template"
-	"bufio"
 	"os"
 	"sync"
 	"time"
 	"strconv"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/gorilla/websocket"
 )
 
 var db *sql.DB = connectDb()
 
 func main() {
 	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/about/", aboutHandler)
 	http.HandleFunc("/create/server/", createServerHandler)
 	http.HandleFunc("/create/client/", createClientHandler)
 	http.HandleFunc("/view/server/", viewServerHandler)
 	http.HandleFunc("/view/client/", viewClientHandler)
-	http.HandleFunc("/chat/", chatHandler)
-	http.HandleFunc("/chat/create/", createChatHandler)
-	http.HandleFunc("/chat/ws", serveWs)
-	http.HandleFunc("/invite/", inviteHandler)
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	/* SSL/TLS */
-	path_to_certificate := "/etc/nginx/ssl/ephemeral/concat_server_and_CA_certs.pem"
-	path_to_key := "/etc/nginx/ssl/ephemeral/private.key"
-	err := http.ListenAndServeTLS(":11994", path_to_certificate, path_to_key, nil)
+	err := http.ListenAndServe(":11995", nil)
     if err != nil {
         log.Fatal(err)
     }
 }
 
 func connectDb() (*sql.DB){
-
-	/* Load config file */
-	file, err := os.Open("mysql.priv")
-	defer file.Close()
-	if err != nil {
-		fmt.Println("Could not find mysql.priv")
-		return nil
-	}
-
-	bio := bufio.NewReader(file)
-	tablename, _, err := bio.ReadLine()
-	username, _, err := bio.ReadLine()
-	password, _, err := bio.ReadLine()
+	tablename := "ephemeral"
+	username := os.Getenv("ephemeral-username")
+	password := os.Getenv("ephemeral-password")
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, tablename))
 	if err != nil {
-		fmt.Println(err.Error())
-		return nil
+		log.Fatal(err)
 	}
 
 	/* Test connection */
 	err = db.Ping()
 	if err != nil {
-		fmt.Println(err.Error())
-		return nil
+		log.Fatal(err)
 	}
-
 	return db
 }
 
@@ -89,23 +66,17 @@ func writeError(w http.ResponseWriter, message string){
 
 	/* Write HTML */
 	data := Out{message}
-	tmpl := template.Must(template.ParseFiles("static/html/error.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/error.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "error", data)
 }
 
 /* GET / */
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/html/home.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/home.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "home", nil)
 }
 
-/* GET /about */
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("static/html/about.html", "static/html/top.html", "static/html/head.html"))
-	tmpl.ExecuteTemplate(w, "about", nil)
-}
-
-/* Given a random 128 bits, encrypt text with an AES cipher */
+/* 128 bit AES */
 func encrypt(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -123,7 +94,7 @@ func encrypt(key, text []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-/* Given encrypted text and the AES cipher key, decrypt the text */
+/* 128 bit AES */
 func decrypt(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -180,22 +151,16 @@ func createServerHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	format := r.FormValue("format")
-	if format == "url" {	/* Return only url */
-		url := "https://" + r.Host + "/view/server/" +msgId + "/" + hex.EncodeToString(key128bits)
-		w.Write([]byte(url))
-	} else {	/* Return html */
-		
-		type Out struct {
-			Host string
-			SecretString string
-			KeyString string
-		}
-		data := Out{r.Host, msgId, hex.EncodeToString(key128bits)}
-		tmpl := template.Must(template.ParseFiles("static/html/create.html", "static/html/top.html", "static/html/head.html"))
-		tmpl.ExecuteTemplate(w, "create", data)
+	
+	type Out struct {
+		Host string
+		SecretString string
+		KeyString string
 	}
+	
+	data := Out{r.Host, msgId, hex.EncodeToString(key128bits)}
+	tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
+	tmpl.ExecuteTemplate(w, "create", data)
 }
 
 /* POST /create/client */
@@ -301,7 +266,7 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
 		Message []string
 	}
 	data := Out{true, strings.Split(message, "\n")}
-	tmpl := template.Must(template.ParseFiles("static/html/viewServer.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/viewServer.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "viewServer", data)
 }
 
@@ -348,8 +313,6 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	m.Unlock()	/*DONE */
 
-	fmt.Println("Message Found!")
-
 	/* Write HTML */
 	type Out struct {
 		Success bool
@@ -357,7 +320,7 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
 		Salt string
 	}
 	data := Out{true, encryptedText, salt}
-	tmpl := template.Must(template.ParseFiles("static/html/viewClient.html", "static/html/top.html", "static/html/head.html"))
+	tmpl := template.Must(template.ParseFiles("static/viewClient.html", "static/top.html", "static/head.html"))
 	tmpl.ExecuteTemplate(w, "viewClient", data)
 }
 
@@ -374,13 +337,8 @@ func generateTableId(db *sql.DB, tablename string) string {
 	/* Check for collision */
 	var available bool
 	test := fmt.Sprintf("SELECT COUNT(*) = 0 FROM %s WHERE id = %q", tablename, id)
-	err = db.QueryRow(test).Scan(&available)
-
-	if err != nil {
-		fmt.Println("err.Error()")
-		return id
-	}
-
+	db.QueryRow(test).Scan(&available)
+	
 	if(available){
 		return id
 	} else {

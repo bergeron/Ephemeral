@@ -8,7 +8,6 @@ CREATE TABLE `messages` (
 	`server_encrypted` BOOLEAN NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-
 --
 -- Self destruct expired messages
 --

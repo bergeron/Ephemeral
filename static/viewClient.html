@@ -1,14 +1,15 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <meta charset="utf-8">
+        <meta charset="utf-8" name=viewport content='width=700'>
         <title>Ephemeral</title>
         <link rel="stylesheet" type="text/css" href="/static/style.css">
         <link rel="icon" type="image/png" href="/static/favicon.png">
         <script
             src="https://code.jquery.com/jquery-3.0.0.min.js"
             integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
-            crossorigin="anonymous"></script>
+            crossorigin="anonymous">
+        </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/pbkdf2.js"></script>	
         <script language="javascript" type="text/javascript" src="/static/ephemeral.js"></script>
@@ -22,8 +23,7 @@
             <a href="/">Ephemeral</a>
         </div>
         <div id="whiteStrip">
-            <br>
-            <div class="center" style="max-width: 750px">
+            <div class="center" style="max-width: 650px">
                 <br>
                 <div id="decryptedMessage" class="well" contentEditable="true">
                     {{.Message}}
@@ -40,6 +40,5 @@
                 <br>
             </div>
         </div>
-        <br><br><br><br><br>
     </body>
 </html>

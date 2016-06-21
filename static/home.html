@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <meta charset="utf-8" name=viewport content='width=750'>
+        <meta charset="utf-8" name=viewport content='width=700'>
         <title>Ephemeral</title>
         <link rel="stylesheet" type="text/css" href="/static/style.css">
         <link rel="icon" type="image/png" href="/static/favicon.png">
@@ -19,7 +19,7 @@
             <a href="/">Ephemeral</a>
         </div>
         <div id="whiteStrip">
-            <div class="center" style="width: 500px;">
+            <div class="center" style="width: 470px;">
                 <h1>1. Write a message</h1>
                 <br>
                 <h1>2. Send URL to recipient</h1>
@@ -29,21 +29,21 @@
         </div>
         <br>
         <form action="/create/server/" method="post" onsubmit="return create(msgText.value);">
-            <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="45" placeholder="Enter message"></textarea>
+            <textarea id="msgText" class="center" NAME="text" ROWS="7" COLS="45" placeholder="Enter message"></textarea>
             <br>
             <div id="options" class="center">
                 <div class="option">
                     <label>
-                        <input type="checkbox">
-                        Expiration (minutes): &nbsp;
+                    <input type="checkbox">
+                    Expiration (minutes): &nbsp;
                     </label>
                     <input id="expire" type="number" placeholder="None" disabled style="width: 177px">
                 </div>
                 <br><br>
                 <div class="option">
                     <label>
-                        <input id="pwdCheck" type="checkbox">
-                        Password protect: &nbsp;
+                    <input id="pwdCheck" type="checkbox">
+                    Password protect: &nbsp;
                     </label>
                     <input id="pwd" type="password" placeholder="None" disabled style="width: 200px">
                 </div>
@@ -52,14 +52,11 @@
             <button  class="submitBtn center" type="submit">Create Message</button>
             <br>
         </form>
-        <div id="result" class="center" style="max-width: 520px">
-            <hr>
+        <div id="result">
             <br>
             Give this URL to the recipient:<br>
-            <input id="clientEncryptedUrl" type="text" class="well" style="width: 90%">
+            <input id="clientEncryptedUrl" type="text" class="well link" size="54">
         </div>
-        <br><br>
-        <br><br>
         <br><br>
     </body>
 </html>

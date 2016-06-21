@@ -8,7 +8,7 @@ $(document).ready(function(){
         });
     });
 
-    $('.well').on('click', function () {
+    $('.link').on('click', function () {
         $(this).select();
     });
 });
@@ -44,6 +44,7 @@ function encrypt(message, password){
     .done(function(data) {
         $('#clientEncryptedUrl').val(data);
         $('#result').show();
+        $(window).scrollTop(10000);
     })
     .fail(function(status, err){
         console.log(status + ' ' + err);
@@ -62,7 +63,7 @@ function decrypt(password){
                 $('#decryptedMessage').append(escapeHtml(lines[i]) + '<br>');
             }
         }
-    } catch (e) {console.log(e);return false;}  /* Error when incorrect key doesn't generate UTF8 */
+    } catch (e) {return false;}  /* Error when incorrect key doesn't generate UTF8 */
 
     return false;
 }

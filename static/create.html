@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <meta charset="utf-8">
+        <meta charset="utf-8" name=viewport content='width=700'>
         <title>Ephemeral</title>
         <link rel="stylesheet" type="text/css" href="/static/style.css">
         <link rel="icon" type="image/png" href="/static/favicon.png">
@@ -16,13 +16,11 @@
         <div id="title">
             <a href="/">Ephemeral</a>
         </div>
-        <div id="whiteStrip">
-            <div class="center" style="max-width: 850px">
-                <h1>Give this URL to the recipient:</h1>
-                <br>
-                <input type="text" class="well" style="width: 90%" value="https://ephemeral.pw/view/server/{{.MsgId}}/{{.Key}}">
-                <br>
-            </div>
+        <div id="whiteStrip" style="text-align: center">
+            <h1>Give this URL to the recipient:</h1>
+            <br>
+            <input type="text" class="well link" size="87" value="https://ephemeral.pw/view/server/{{.MsgId}}/{{.Key}}">
+            <br><br>
         </div>
     </body>
 </html>

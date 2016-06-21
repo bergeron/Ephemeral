@@ -24,14 +24,14 @@ a:hover{
     color: #36D7B7;
 }
 
-#title a{
-    color: black;
-    text-decoration: none;
-}
-
 #title{
     padding: 10px;
     font-size: 60px;
+}
+
+#title a{
+    color: black;
+    text-decoration: none;
 }
 
 #title a:hover{
@@ -45,7 +45,7 @@ a:hover{
 }
 
 #whiteStrip h1{
-    font-size: 25px;
+    font-size: 23px;
     font-weight: normal;
     margin:0;
     padding:0;
@@ -53,20 +53,25 @@ a:hover{
 
 #msgText{
     font-size: 20px;
-    height: 222px;  /* So Chrome mobile wont resize the box when typing */
+    height: 161px;  /* So Chrome mobile wont resize the box when typing */
 }
 
 .well {
-    font-size: 15px;
+    font-size: 20px;
     font-family: monospace;
     word-wrap: break-word;
     color: white;
     min-height: 20px;
-    padding: 19px;
+    padding: 15px;
     background-color: black;
     border: 4px solid #36D7B7;
     -moz-border-radius: 15px;
-    border-radius: 15px; */
+    border-radius: 15px;
+    outline: none;
+}
+
+.link {
+    font-size: 13px;
 }
 
 .submitBtn {
@@ -102,11 +107,11 @@ a:hover{
 
 #result{
     display: none;
-    max-width: 700px;
+    text-align: center;
 }
 
 #decryptInput{
-    font-size: 25px;
+    font-size: 20px;
     width: 40%;
     margin-right:20px;
 }

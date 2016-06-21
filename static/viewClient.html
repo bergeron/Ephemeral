@@ -1,43 +1,45 @@
-{{define "viewClient"}}
-
 <!DOCTYPE HTML>
 <html>
     <head>
-        {{template "head" .}}
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
+        <meta charset="utf-8">
+        <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <script
+            src="https://code.jquery.com/jquery-3.0.0.min.js"
+            integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+            crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/pbkdf2.js"></script>	
-        <script language="javascript" type="text/javascript" src="/static/message.js"></script>
+        <script language="javascript" type="text/javascript" src="/static/ephemeral.js"></script>
         <script language="javascript">
             var encryptedText = {{.Message}};
             var salt = {{.Salt}};
         </script>
     </head>
     <body>
-
-        {{template "top" .}}
-
-        <div id="whiteStrip" class="align">
-			<br>
-			<div id="decryptedMessage" class="well">
-				{{.Message}}
-			</div>
-
-			<br><br>
-
-			<form onsubmit="return decrypt(password.value);">
-				<div>
-					<input id="decryptInput" type="text" name="password">
-					<button class="submitBtn" >Decrypt</button>
-				</div>
-			</form>
-
-			<br><br><br><br>
-			<h1>This message has been deleted and cannot be viewed again.</h1>
-			<br>
+        <div id="title">
+            <a href="/">Ephemeral</a>
         </div>
-
+        <div id="whiteStrip">
+            <br>
+            <div class="center" style="max-width: 750px">
+                <br>
+                <div id="decryptedMessage" class="well" contentEditable="true">
+                    {{.Message}}
+                </div>
+                <br>
+                <form onsubmit="return decrypt(password.value);">
+                    <div>
+                        <input id="decryptInput" type="text" name="password">
+                        <button class="submitBtn" >Decrypt</button>
+                    </div>
+                </form>
+                <br><br><br><br>
+                <h1>This message has been deleted and cannot be viewed again.</h1>
+                <br>
+            </div>
+        </div>
+        <br><br><br><br><br>
     </body>
-
 </html>
-
-{{end}}

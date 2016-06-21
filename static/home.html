@@ -1,74 +1,65 @@
-{{define "home"}}
 <!DOCTYPE HTML>
 <html>
     <head>
-        {{template "head" .}}
+        <meta charset="utf-8" name=viewport content='width=750'>
+        <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <script
+            src="https://code.jquery.com/jquery-3.0.0.min.js"
+            integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+            crossorigin="anonymous">
+        </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/pbkdf2.js"></script>
-        <script language="javascript" type="text/javascript" src="/static/message.js"></script>
-	<script>
- $(document).ready(function(){
-                                $('.link').on('click', function () {
-                                        $(this).select();
-                                });
-                        });
-</script>
+        <script language="javascript" type="text/javascript" src="/static/ephemeral.js"></script>
     </head>
     <body>
-
-        {{template "top" .}}
-
-        <div id="whiteStrip">
-			<div class="center" style="width: 540px;">
-				<h1>1. Write a message</h1><br>
-				<h1>2. Send URL to recipient</h1><br>
-				<h1>3. Message destroyed when read</h1><br>
-			</div>
+        <div id="title">
+            <a href="/">Ephemeral</a>
         </div>
-
+        <div id="whiteStrip">
+            <div class="center" style="width: 500px;">
+                <h1>1. Write a message</h1>
+                <br>
+                <h1>2. Send URL to recipient</h1>
+                <br>
+                <h1>3. Message destroyed when read</h1>
+            </div>
+        </div>
         <br>
         <form action="/create/server/" method="post" onsubmit="return create(msgText.value);">
-            <div style="overflow:hidden">
-                <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="50" placeholder="Enter message"></textarea>
-            </div>
+            <textarea id="msgText" class="center" NAME="text" ROWS="9" COLS="45" placeholder="Enter message"></textarea>
             <br>
-
-            <div id="expiration" class="center">
-
+            <div id="options" class="center">
                 <div class="option">
-                    <input id="expireCheckbox" type="checkbox">
-                    Set expiration (minutes): &nbsp;
-                    <input id="expireMinutes" name="expireMinutes" type="number" placeholder="None" disabled><br><br>
+                    <label>
+                        <input type="checkbox">
+                        Expiration (minutes): &nbsp;
+                    </label>
+                    <input id="expire" type="number" placeholder="None" disabled style="width: 177px">
                 </div>
-                
+                <br><br>
                 <div class="option">
-                    <input id="passwordCheckbox" type="checkbox">
-                    Password protect:&nbsp;
-                    <input id="customPassword" type="text" placeholder="None" disabled>
+                    <label>
+                        <input id="pwdCheck" type="checkbox">
+                        Password protect: &nbsp;
+                    </label>
+                    <input id="pwd" type="password" placeholder="None" disabled style="width: 200px">
                 </div>
             </div>
             <br>
-            <div id="btnsWrapper" class="center">
-                <button  class="submitBtn center" type="submit">Create Message</button>
-
-            </div>
-
+            <button  class="submitBtn center" type="submit">Create Message</button>
             <br>
-
         </form>
-
-        <div id="result" class="center">
+        <div id="result" class="center" style="max-width: 520px">
             <hr>
             <br>
             Give this URL to the recipient:<br>
-
-  		<textarea id="finishedMessage" class="well link" rows="2" cols="100">https://{{.Host}}/view/server/{{.SecretString}}/{{.KeyString}}</textarea>
+            <input id="clientEncryptedUrl" type="text" class="well" style="width: 90%">
         </div>
-
         <br><br>
         <br><br>
         <br><br>
-
     </body>
 </html>
-{{end}}

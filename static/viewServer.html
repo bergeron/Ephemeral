@@ -1,35 +1,38 @@
-{{define "viewServer"}}
-
 <!DOCTYPE HTML>
 <html>
     <head>
-        {{template "head" .}}
-
+        <meta charset="utf-8">
+        <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <script
+            src="https://code.jquery.com/jquery-3.0.0.min.js"
+            integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+            crossorigin="anonymous">
+        </script>
+        <script language="javascript" type="text/javascript" src="/static/ephemeral.js"></script>
         <script>
             var message = {{.Message}};
             $(document).ready(function(){
                 for(var i=0; i < message.length; i++){
-                    $('#viewServerMsgWell').append(message[i] + '<br>');
+                    $('#viewServerMsg').append(message[i] + '<br>');
                 }
             });
         </script>
     </head>
     <body>
-
-        {{template "top" .}}
-
-        <div id="whiteStrip" class="align">
-			<br>
-			<div id="viewServerMsgWell" class="well">
-			</div>
-
-			<br><br>
-			<h1>This message has been deleted and cannot be viewed again.</h1>
-			<br>
+        <div id="title">
+            <a href="/">Ephemeral</a>
         </div>
-
+        <div id="whiteStrip">
+            <div class="center" style="max-width: 750px">
+                <br>
+                <div id="viewServerMsg" class="well" contentEditable="true">
+                </div>
+                <br><br>
+                <h1>This message has been deleted and cannot be viewed again.</h1>
+                <br>
+            </div>
+        </div>
     </body>
-
 </html>
-
-{{end}}

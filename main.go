@@ -25,15 +25,17 @@ import (
 var db *sql.DB = connectDb()
 
 func main() {
-    http.HandleFunc("/", homeHandler)
     http.HandleFunc("/create/server/", createServerHandler)
     http.HandleFunc("/create/client/", createClientHandler)
     http.HandleFunc("/view/server/", viewServerHandler)
     http.HandleFunc("/view/client/", viewClientHandler)
-
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        http.ServeFile(w, r, "static/home.html")
+    })
+    
     fs := http.FileServer(http.Dir("static"))
     http.Handle("/static/", http.StripPrefix("/static/", fs))
-
+    
     err := http.ListenAndServe(":11994", nil)
     if err != nil {
         log.Fatal(err)
@@ -49,7 +51,7 @@ func connectDb() (*sql.DB){
     if err != nil {
         log.Fatal(err)
     }
-
+    
     /* Test connection */
     err = db.Ping()
     if err != nil {
@@ -63,17 +65,9 @@ func writeError(w http.ResponseWriter, message string){
     type Out struct {
         Message string
     }
-
-    /* Write HTML */
-    data := Out{message}
-    tmpl := template.Must(template.ParseFiles("static/error.html", "static/top.html", "static/head.html"))
-    tmpl.ExecuteTemplate(w, "error", data)
-}
-
-/* GET / */
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-    tmpl := template.Must(template.ParseFiles("static/home.html", "static/top.html", "static/head.html"))
-    tmpl.ExecuteTemplate(w, "home", nil)
+    
+    tmpl := template.Must(template.ParseFiles("static/error.html"))
+    tmpl.Execute(w, Out{message})
 }
 
 /* 128 bit AES */
@@ -82,7 +76,7 @@ func encrypt(key, text []byte) ([]byte, error) {
     if err != nil {
         return nil, err
     }
-
+    
     b := base64.StdEncoding.EncodeToString(text)
     ciphertext := make([]byte, aes.BlockSize+len(b))
     iv := ciphertext[:aes.BlockSize]
@@ -116,35 +110,34 @@ func decrypt(key, text []byte) ([]byte, error) {
 
 /* POST /create/server */
 func createServerHandler(w http.ResponseWriter, r *http.Request) {
-
     text := r.FormValue("text")
     if len(text) > 16000{
         writeError(w, "Message too long. Max character length is 16000.")
         return
     }
-
+    
     msgId := generateTableId(db, "messages")
-
+    
     /* Generate 128 bit key */
     key128bits := make([]byte, 16)
     _, err := rand.Read(key128bits)
     if err != nil {
         log.Fatal(err)
     }
-
+    
     /* Encrypt the text */
     encryptedtextBytes, err := encrypt(key128bits, []byte(text))
     if err != nil {
         log.Fatal(err)
     }
     encryptedtext := hex.EncodeToString(encryptedtextBytes)
-
+    
     /* Set expiration date */
     expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
     if err != nil {
         expireMinutes = 43200   /* Default expire in 30 days */
     }
-
+    
     /* Insert message into db */
     _, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
                         msgId, encryptedtext, nil, time.Now().Unix(), expireMinutes, true)
@@ -153,14 +146,12 @@ func createServerHandler(w http.ResponseWriter, r *http.Request) {
     }
     
     type Out struct {
-        Host string
-        SecretString string
-        KeyString string
+        MsgId string
+        Key string
     }
     
-    data := Out{r.Host, msgId, hex.EncodeToString(key128bits)}
-    tmpl := template.Must(template.ParseFiles("static/create.html", "static/top.html", "static/head.html"))
-    tmpl.ExecuteTemplate(w, "create", data)
+    tmpl := template.Must(template.ParseFiles("static/create.html"))
+    tmpl.Execute(w, Out{msgId, hex.EncodeToString(key128bits)})
 }
 
 /* POST /create/client */
@@ -171,30 +162,29 @@ func createClientHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message too long. Max character length is 16000.")
         return
     }
-
+    
     msgId := generateTableId(db, "messages")
     salt := r.FormValue("salt")
-
+    
     /* Set expiration date */
     expireMinutes, err := strconv.Atoi(r.FormValue("expireMinutes"))
     if err != nil {
         expireMinutes = 43200   /* Default expire in 30 days */
     }
-
+    
     /* Insert message into db */
     _, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
                         msgId, encryptedText, salt, time.Now().Unix(), expireMinutes, false)
     if err != nil {
         log.Fatal(err)
     }
-
+    
     url := "https://" + r.Host + "/view/client/" + msgId
     w.Write([]byte(url))
 }
 
 /* GET /view/server */
 func viewServerHandler(w http.ResponseWriter, r *http.Request) {
-
     /* Blacklist sites that GET the url before sending to recipient */
     blacklist := [...]string{"facebook"}
     
@@ -204,7 +194,7 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
     }
-
+    
     /* get query params */
     queryString := strings.TrimSuffix(r.URL.Path[len("/view/server/"):],"/")
     params := strings.Split(queryString, "/")
@@ -212,7 +202,7 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message not found. It may have been deleted.")
         return
     }
-
+    
     msgId := params[0]
     keyString := params[1]
     keyBytes, err := hex.DecodeString(keyString)
@@ -221,10 +211,10 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message not found. It may have been deleted.")
         return
     }
-
+    
     var m sync.Mutex
     m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
-
+    
     /* Lookup message in db */
     var encryptedText string
     err = db.QueryRow("SELECT encrypted_text FROM messages WHERE id = ?", msgId).Scan(&encryptedText)
@@ -233,7 +223,7 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message not found. It may have been deleted.")
         return
     }
-
+    
     /* Decrypt message */
     encryptedtextBytes , err := hex.DecodeString(encryptedText)
     if err != nil {
@@ -247,26 +237,23 @@ func viewServerHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message not found. It may have been deleted.")
         return
     }
-
-    message := template.HTMLEscapeString(string(messageBytes))  /* no XSS */
-
+    
     /* Delete message from db */
     _, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
     if err != nil {
         fmt.Println("Message already deleted.")     /* Shouldn't happen */
     }
-
+    
     m.Unlock()  /*DONE */
-
-    fmt.Println("Message Found!")
-
-    /* Write HTML */
+    
+    message := template.HTMLEscapeString(string(messageBytes))  /* no XSS */
+    
     type Out struct {
         Message []string
     }
     data := Out{strings.Split(message, "\n")}
-    tmpl := template.Must(template.ParseFiles("static/viewServer.html", "static/top.html", "static/head.html"))
-    tmpl.ExecuteTemplate(w, "viewServer", data)
+    tmpl := template.Must(template.ParseFiles("static/viewServer.html"))
+    tmpl.Execute(w, data)
 }
 
 /* GET /view/client */
@@ -281,7 +268,7 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
             return
         }
     }
-
+    
     /* get query params */
     queryString := strings.TrimSuffix(r.URL.Path[len("/view/client/"):],"/")
     params := strings.Split(queryString, "/")
@@ -290,10 +277,10 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     msgId := params[0]
-
+    
     var m sync.Mutex
     m.Lock() /* ONLY ONE THREAD IN HERE AT A TIME */
-
+    
     /* Lookup message in db */
     var encryptedText string
     var salt string
@@ -303,35 +290,34 @@ func viewClientHandler(w http.ResponseWriter, r *http.Request) {
         writeError(w, "Message not found. It may have been deleted.")
         return
     }
-
+    
      /* Delete message from db */
     _, err = db.Exec("DELETE FROM messages WHERE id = ? LIMIT 1", msgId)
     if err != nil {
         fmt.Println("Message already deleted.")     /* Shouldn't happen */
     }
-
+    
     m.Unlock()  /*DONE */
-
-    /* Write HTML */
+    
     type Out struct {
         Message string
         Salt string
     }
-    data := Out{encryptedText, salt}
-    tmpl := template.Must(template.ParseFiles("static/viewClient.html", "static/top.html", "static/head.html"))
-    tmpl.ExecuteTemplate(w, "viewClient", data)
+    
+    tmpl := template.Must(template.ParseFiles("static/viewClient.html"))
+    tmpl.Execute(w, Out{encryptedText, salt})
 }
 
-/* Generate unique 128 random bits */
+/* Generate unique 64 random bits */
 func generateTableId(db *sql.DB, tablename string) string {
-
-    rand128bits := make([]byte, 16)
+    
+    rand128bits := make([]byte, 8)
     _, err := rand.Read(rand128bits)
     if err != nil {
         log.Fatal(err)
     }
     id := hex.EncodeToString(rand128bits)
-
+    
     /* Check for collision */
     var available bool
     test := fmt.Sprintf("SELECT COUNT(*) = 0 FROM %s WHERE id = %q", tablename, id)

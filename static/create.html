@@ -1,28 +1,28 @@
-{{define "create"}}
 <!DOCTYPE HTML>
 <html>
     <head>
-        {{template "head" .}}
-		
-		<script>
-            $(document).ready(function(){
-				$('.link').on('click', function () {
-					$(this).select();
-				});
-			});
-		</script>
+        <meta charset="utf-8">
+        <title>Ephemeral</title>
+        <link rel="stylesheet" type="text/css" href="/static/style.css">
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <script
+            src="https://code.jquery.com/jquery-3.0.0.min.js"
+            integrity="sha256-JmvOoLtYsmqlsWxa7mDSLMwa6dZ9rrIdtrrVYRnDRH0="
+            crossorigin="anonymous">
+        </script>
+        <script language="javascript" type="text/javascript" src="/static/ephemeral.js"></script>
     </head>
     <body>
-{{template "top" .}}
-
-        <div id="whiteStrip" class="align">
-            <h1>Give this URL to the recipient:</h1>
-            <br><br>
-            <textarea class="well link" rows="3" cols="100">https://{{.Host}}/view/server/{{.SecretString}}/{{.KeyString}}</textarea>
-
-            <br>
-
+        <div id="title">
+            <a href="/">Ephemeral</a>
+        </div>
+        <div id="whiteStrip">
+            <div class="center" style="max-width: 850px">
+                <h1>Give this URL to the recipient:</h1>
+                <br>
+                <input type="text" class="well" style="width: 90%" value="https://ephemeral.pw/view/server/{{.MsgId}}/{{.Key}}">
+                <br>
+            </div>
         </div>
     </body>
 </html>
-{{end}}

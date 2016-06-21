@@ -18,7 +18,6 @@ import (
     "strconv"
     "strings"
     "sync"
-    "time"
     _ "github.com/go-sql-driver/mysql"
 )
 
@@ -140,8 +139,8 @@ func createServerHandler(w http.ResponseWriter, r *http.Request) {
     }
     
     msgId := generateMsgId(db)
-    _, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
-        msgId, hex.EncodeToString(encryptedtextBytes), nil, time.Now().Unix(), expireMinutes, true)
+    _, err = db.Exec("insert into messages values (?, ?, ?, UNIX_TIMESTAMP(), ?, ?)",
+        msgId, hex.EncodeToString(encryptedtextBytes), nil, expireMinutes, true)
     
     if err != nil {
         http.Error(w, "Something went wrong :(", http.StatusInternalServerError)
@@ -177,8 +176,8 @@ func createClientHandler(w http.ResponseWriter, r *http.Request) {
     }
     
     msgId := generateMsgId(db)
-    _, err = db.Exec("insert into messages values (?, ?, ?, ?, ?, ?)", 
-        msgId, encryptedText, salt, time.Now().Unix(), expireMinutes, false)
+    _, err = db.Exec("insert into messages values (?, ?, ?, UNIX_TIMESTAMP(), ?, ?)",
+        msgId, encryptedText, salt, expireMinutes, false)
     
     if err != nil {
         http.Error(w, "Something went wrong :(", http.StatusInternalServerError)

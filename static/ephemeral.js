@@ -26,7 +26,7 @@ function encrypt(message, password){
     if(!message){
         message = " ";
     }
-    
+
     var salt = CryptoJS.lib.WordArray.random(128/8).toString();
     var key = CryptoJS.PBKDF2(password, salt, { keySize: 128/32 }).toString();
     var encryptedText = CryptoJS.AES.encrypt(message, key).toString();

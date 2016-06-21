@@ -1,11 +1,11 @@
 DROP TABLE IF EXISTS `messages`;
 CREATE TABLE `messages` (
-	`id` VARBINARY(32) NOT NULL,
-	`encrypted_text` VARBINARY(43688) NOT NULL,
-	`salt` VARCHAR(255),
-	`dt_created_epoch` BIGINT NOT NULL,
-	`expire_minutes` INT,
-	`server_encrypted` BOOLEAN NOT NULL
+    `id` VARBINARY(32) NOT NULL,
+    `encrypted_text` VARBINARY(43688) NOT NULL,
+    `salt` VARCHAR(255),
+    `dt_created_epoch` BIGINT NOT NULL,
+    `expire_minutes` INT,
+    `server_encrypted` BOOLEAN NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --

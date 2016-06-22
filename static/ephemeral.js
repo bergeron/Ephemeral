@@ -9,6 +9,10 @@ $(document).ready(function(){
     });
 
     /* iOS hack to force "cut copy paste" keyboard */
+    if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+        $('.link').parent().attr('contenteditable', 'true');
+    }
+
     $('.link').on('click', function () {
         var sel = window.getSelection();
         var range = document.createRange();

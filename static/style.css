@@ -53,6 +53,7 @@ a:hover{
 
 #msgText{
     font-size: 20px;
+    width: 512px;
     height: 161px;  /* So Chrome mobile wont resize the box when typing */
 }
 
@@ -68,10 +69,12 @@ a:hover{
     -moz-border-radius: 15px;
     border-radius: 15px;
     outline: none;
+    box-sizing: border-box;
 }
 
 .link {
     font-size: 12px;
+    width: 100%;
 }
 
 .submitBtn {

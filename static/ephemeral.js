@@ -8,8 +8,12 @@ $(document).ready(function(){
         });
     });
 
-    $('.link').on('focus', function () {
+    $('.link').on('click', function () {
         $(this).select();
+    });
+
+    $('.link').on('mouseup', function (e) {
+        e.preventDefault();
     });
 });
 

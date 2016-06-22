@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <meta charset="utf-8" name=viewport content='width=700'>
+        <meta charset="utf-8" name="viewport" content="width=600">
         <title>Ephemeral</title>
         <link rel="stylesheet" type="text/css" href="/static/style.css">
         <link rel="icon" type="image/png" href="/static/favicon.png">
@@ -35,7 +35,7 @@
                 <div class="option">
                     <label>
                     <input type="checkbox">
-                    Expiration (minutes): &nbsp;
+                        Expiration (minutes): &nbsp;
                     </label>
                     <input id="expire" name="expireMinutes" type="number" placeholder="None" disabled style="width: 177px">
                 </div>
@@ -43,19 +43,23 @@
                 <div class="option">
                     <label>
                     <input id="pwdCheck" type="checkbox">
-                    Password protect: &nbsp;
+                        Password protect: &nbsp;
                     </label>
                     <input id="pwd" type="password" placeholder="None" disabled style="width: 200px">
                 </div>
             </div>
             <br>
-            <button  class="submitBtn center" type="submit">Create Message</button>
+            <button class="submitBtn center" type="submit">
+                Create Message
+            </button>
             <br>
         </form>
         <div id="result">
             <br>
             Give this URL to the recipient:<br>
-            <input id="clientEncryptedUrl" type="text" class="well link" size="54">
+            <div class="center" style="max-width: 450px;">
+                <input id="clientEncryptedUrl" type="text" class="well link">
+            </div>
         </div>
         <br><br>
     </body>

@@ -8,12 +8,13 @@ $(document).ready(function(){
         });
     });
 
+    /* iOS hack to force "cut copy paste" keyboard */
     $('.link').on('click', function () {
-        $(this).select();
-    });
-
-    $('.link').on('mouseup', function (e) {
-        e.preventDefault();
+        var sel = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(this);
+        sel.removeAllRanges();
+        sel.addRange(range);
     });
 });
 
@@ -46,7 +47,7 @@ function encrypt(message, password){
         }
     })
     .done(function(data) {
-        $('#clientEncryptedUrl').val(data);
+        $('#clientEncryptedUrl').html(data);
         $('#result').show();
         $(window).scrollTop(10000);
     })

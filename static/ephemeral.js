@@ -8,7 +8,7 @@ $(document).ready(function(){
         });
     });
 
-    $('.link').on('click', function () {
+    $('.link').on('focus', function () {
         $(this).select();
     });
 });
